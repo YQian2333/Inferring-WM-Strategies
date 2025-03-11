@@ -22,7 +22,7 @@ import f_plotting
 
 #%% initialize parameters
 
-data_path = 'D:/NUS/PhD' # for laptop
+data_path = 'D:/data' # for laptop
 tRangeRaw = np.arange(-500,4000,1) # -300 baseline, 0 onset, 300 pre1, 1300 delay1, 1600 pre2, 2600 delay2, response
 
 locs = (0,1,2,3,)
