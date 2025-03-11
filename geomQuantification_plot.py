@@ -27,7 +27,7 @@ import f_decoding
 import f_plotting
 
 #%%
-phd_path = 'D:/data' # for laptop
+data_path = 'D:/data' 
 tRangeRaw = np.arange(-500,4000,1) # -300 baseline, 0 onset, 300 pre1, 1300 delay1, 1600 pre2, 2600 delay2, response
 
 locs = (0,1,2,3,)
@@ -95,43 +95,43 @@ medianprops = dict(linestyle='--', linewidth=1, color='w')
 ###############
 
 # load precomputed geometries from files
-cosTheta11_data = np.load(f'{phd_path}/' + 'cosTheta_11_data.npy', allow_pickle=True).item()
-cosTheta12_data = np.load(f'{phd_path}/' + 'cosTheta_12_data.npy', allow_pickle=True).item()
-cosTheta22_data = np.load(f'{phd_path}/' + 'cosTheta_22_data.npy', allow_pickle=True).item()
-cosPsi11_data = np.load(f'{phd_path}/' + 'cosPsi_11_data.npy', allow_pickle=True).item()
-cosPsi12_data = np.load(f'{phd_path}/' + 'cosPsi_12_data.npy', allow_pickle=True).item()
-cosPsi22_data = np.load(f'{phd_path}/' + 'cosPsi_22_data.npy', allow_pickle=True).item()
+cosTheta11_data = np.load(f'{data_path}/' + 'cosTheta_11_data.npy', allow_pickle=True).item()
+cosTheta12_data = np.load(f'{data_path}/' + 'cosTheta_12_data.npy', allow_pickle=True).item()
+cosTheta22_data = np.load(f'{data_path}/' + 'cosTheta_22_data.npy', allow_pickle=True).item()
+cosPsi11_data = np.load(f'{data_path}/' + 'cosPsi_11_data.npy', allow_pickle=True).item()
+cosPsi12_data = np.load(f'{data_path}/' + 'cosPsi_12_data.npy', allow_pickle=True).item()
+cosPsi22_data = np.load(f'{data_path}/' + 'cosPsi_22_data.npy', allow_pickle=True).item()
 
-cosTheta11_shuff_data = np.load(f'{phd_path}/' + 'cosTheta_11_shuff_data.npy', allow_pickle=True).item()
-cosTheta12_shuff_data = np.load(f'{phd_path}/' + 'cosTheta_12_shuff_data.npy', allow_pickle=True).item()
-cosTheta22_shuff_data = np.load(f'{phd_path}/' + 'cosTheta_22_shuff_data.npy', allow_pickle=True).item()
-cosPsi11_shuff_data = np.load(f'{phd_path}/' + 'cosPsi_11_shuff_data.npy', allow_pickle=True).item()
-cosPsi12_shuff_data = np.load(f'{phd_path}/' + 'cosPsi_12_shuff_data.npy', allow_pickle=True).item()
-cosPsi22_shuff_data = np.load(f'{phd_path}/' + 'cosPsi_22_shuff_data.npy', allow_pickle=True).item()
+cosTheta11_shuff_data = np.load(f'{data_path}/' + 'cosTheta_11_shuff_data.npy', allow_pickle=True).item()
+cosTheta12_shuff_data = np.load(f'{data_path}/' + 'cosTheta_12_shuff_data.npy', allow_pickle=True).item()
+cosTheta22_shuff_data = np.load(f'{data_path}/' + 'cosTheta_22_shuff_data.npy', allow_pickle=True).item()
+cosPsi11_shuff_data = np.load(f'{data_path}/' + 'cosPsi_11_shuff_data.npy', allow_pickle=True).item()
+cosPsi12_shuff_data = np.load(f'{data_path}/' + 'cosPsi_12_shuff_data.npy', allow_pickle=True).item()
+cosPsi22_shuff_data = np.load(f'{data_path}/' + 'cosPsi_22_shuff_data.npy', allow_pickle=True).item()
 
-cosTheta_choice_data = np.load(f'{phd_path}/' + 'cosTheta_choice_data.npy', allow_pickle=True).item()
-cosTheta_nonchoice_data = np.load(f'{phd_path}/' + 'cosTheta_nonchoice_data.npy', allow_pickle=True).item()
-cosPsi_choice_data = np.load(f'{phd_path}/' + 'cosPsi_choice_data.npy', allow_pickle=True).item()
-cosPsi_nonchoice_data = np.load(f'{phd_path}/' + 'cosPsi_nonchoice_data.npy', allow_pickle=True).item()
+cosTheta_choice_data = np.load(f'{data_path}/' + 'cosTheta_choice_data.npy', allow_pickle=True).item()
+cosTheta_nonchoice_data = np.load(f'{data_path}/' + 'cosTheta_nonchoice_data.npy', allow_pickle=True).item()
+cosPsi_choice_data = np.load(f'{data_path}/' + 'cosPsi_choice_data.npy', allow_pickle=True).item()
+cosPsi_nonchoice_data = np.load(f'{data_path}/' + 'cosPsi_nonchoice_data.npy', allow_pickle=True).item()
 
-cosTheta_choice_shuff_data = np.load(f'{phd_path}/' + 'cosTheta_choice_shuff_data.npy', allow_pickle=True).item()
-cosTheta_nonchoice_shuff_data = np.load(f'{phd_path}/' + 'cosTheta_nonchoice_shuff_data.npy', allow_pickle=True).item()
-cosPsi_choice_shuff_data = np.load(f'{phd_path}/' + 'cosPsi_choice_shuff_data.npy', allow_pickle=True).item()
-cosPsi_nonchoice_shuff_data = np.load(f'{phd_path}/' + 'cosPsi_nonchoice_shuff_data.npy', allow_pickle=True).item()
+cosTheta_choice_shuff_data = np.load(f'{data_path}/' + 'cosTheta_choice_shuff_data.npy', allow_pickle=True).item()
+cosTheta_nonchoice_shuff_data = np.load(f'{data_path}/' + 'cosTheta_nonchoice_shuff_data.npy', allow_pickle=True).item()
+cosPsi_choice_shuff_data = np.load(f'{data_path}/' + 'cosPsi_choice_shuff_data.npy', allow_pickle=True).item()
+cosPsi_nonchoice_shuff_data = np.load(f'{data_path}/' + 'cosPsi_nonchoice_shuff_data.npy', allow_pickle=True).item()
 
 # load precomputed performance from files
-performance1_item_data = np.load(f'{phd_path}/' + 'performance1_item_data.npy', allow_pickle=True).item()
-performance2_item_data = np.load(f'{phd_path}/' + 'performance2_item_data.npy', allow_pickle=True).item()
-performance1_item_shuff_data = np.load(f'{phd_path}/' + 'performance1_item_shuff_data.npy', allow_pickle=True).item()
-performance2_item_shuff_data = np.load(f'{phd_path}/' + 'performance2_item_shuff_data.npy', allow_pickle=True).item()
+performance1_item_data = np.load(f'{data_path}/' + 'performance1_item_data.npy', allow_pickle=True).item()
+performance2_item_data = np.load(f'{data_path}/' + 'performance2_item_data.npy', allow_pickle=True).item()
+performance1_item_shuff_data = np.load(f'{data_path}/' + 'performance1_item_shuff_data.npy', allow_pickle=True).item()
+performance2_item_shuff_data = np.load(f'{data_path}/' + 'performance2_item_shuff_data.npy', allow_pickle=True).item()
 
 # load precomputed geometries from files for baselines
-cosTheta11_bsl_data = np.load(f'{phd_path}/' + 'cosTheta_11_bsl_data.npy', allow_pickle=True).item()
-cosTheta12_bsl_data = np.load(f'{phd_path}/' + 'cosTheta_12_bsl_data.npy', allow_pickle=True).item()
-cosTheta22_bsl_data = np.load(f'{phd_path}/' + 'cosTheta_22_bsl_data.npy', allow_pickle=True).item()
-cosPsi11_bsl_data = np.load(f'{phd_path}/' + 'cosPsi_11_bsl_data.npy', allow_pickle=True).item()
-cosPsi12_bsl_data = np.load(f'{phd_path}/' + 'cosPsi_12_bsl_data.npy', allow_pickle=True).item()
-cosPsi22_bsl_data = np.load(f'{phd_path}/' + 'cosPsi_22_bsl_data.npy', allow_pickle=True).item()
+cosTheta11_bsl_data = np.load(f'{data_path}/' + 'cosTheta_11_bsl_data.npy', allow_pickle=True).item()
+cosTheta12_bsl_data = np.load(f'{data_path}/' + 'cosTheta_12_bsl_data.npy', allow_pickle=True).item()
+cosTheta22_bsl_data = np.load(f'{data_path}/' + 'cosTheta_22_bsl_data.npy', allow_pickle=True).item()
+cosPsi11_bsl_data = np.load(f'{data_path}/' + 'cosPsi_11_bsl_data.npy', allow_pickle=True).item()
+cosPsi12_bsl_data = np.load(f'{data_path}/' + 'cosPsi_12_bsl_data.npy', allow_pickle=True).item()
+cosPsi22_bsl_data = np.load(f'{data_path}/' + 'cosPsi_22_bsl_data.npy', allow_pickle=True).item()
 
 #%%
 
@@ -140,43 +140,43 @@ cosPsi22_bsl_data = np.load(f'{phd_path}/' + 'cosPsi_22_bsl_data.npy', allow_pic
 ########
 
 # load precomputed geometries from files
-cosTheta11_rnn = np.load(f'{phd_path}/' + 'cosTheta_11_rnn.npy', allow_pickle=True).item()
-cosTheta12_rnn = np.load(f'{phd_path}/' + 'cosTheta_12_rnn.npy', allow_pickle=True).item()
-cosTheta22_rnn = np.load(f'{phd_path}/' + 'cosTheta_22_rnn.npy', allow_pickle=True).item()
-cosPsi11_rnn = np.load(f'{phd_path}/' + 'cosPsi_11_rnn.npy', allow_pickle=True).item()
-cosPsi12_rnn = np.load(f'{phd_path}/' + 'cosPsi_12_rnn.npy', allow_pickle=True).item()
-cosPsi22_rnn = np.load(f'{phd_path}/' + 'cosPsi_22_rnn.npy', allow_pickle=True).item()
+cosTheta11_rnn = np.load(f'{data_path}/' + 'cosTheta_11_rnn.npy', allow_pickle=True).item()
+cosTheta12_rnn = np.load(f'{data_path}/' + 'cosTheta_12_rnn.npy', allow_pickle=True).item()
+cosTheta22_rnn = np.load(f'{data_path}/' + 'cosTheta_22_rnn.npy', allow_pickle=True).item()
+cosPsi11_rnn = np.load(f'{data_path}/' + 'cosPsi_11_rnn.npy', allow_pickle=True).item()
+cosPsi12_rnn = np.load(f'{data_path}/' + 'cosPsi_12_rnn.npy', allow_pickle=True).item()
+cosPsi22_rnn = np.load(f'{data_path}/' + 'cosPsi_22_rnn.npy', allow_pickle=True).item()
 
-cosTheta11_shuff_rnn = np.load(f'{phd_path}/' + 'cosTheta_11_shuff_rnn.npy', allow_pickle=True).item()
-cosTheta12_shuff_rnn = np.load(f'{phd_path}/' + 'cosTheta_12_shuff_rnn.npy', allow_pickle=True).item()
-cosTheta22_shuff_rnn = np.load(f'{phd_path}/' + 'cosTheta_22_shuff_rnn.npy', allow_pickle=True).item()
-cosPsi11_shuff_rnn = np.load(f'{phd_path}/' + 'cosPsi_11_shuff_rnn.npy', allow_pickle=True).item()
-cosPsi12_shuff_rnn = np.load(f'{phd_path}/' + 'cosPsi_12_shuff_rnn.npy', allow_pickle=True).item()
-cosPsi22_shuff_rnn = np.load(f'{phd_path}/' + 'cosPsi_22_shuff_rnn.npy', allow_pickle=True).item()
+cosTheta11_shuff_rnn = np.load(f'{data_path}/' + 'cosTheta_11_shuff_rnn.npy', allow_pickle=True).item()
+cosTheta12_shuff_rnn = np.load(f'{data_path}/' + 'cosTheta_12_shuff_rnn.npy', allow_pickle=True).item()
+cosTheta22_shuff_rnn = np.load(f'{data_path}/' + 'cosTheta_22_shuff_rnn.npy', allow_pickle=True).item()
+cosPsi11_shuff_rnn = np.load(f'{data_path}/' + 'cosPsi_11_shuff_rnn.npy', allow_pickle=True).item()
+cosPsi12_shuff_rnn = np.load(f'{data_path}/' + 'cosPsi_12_shuff_rnn.npy', allow_pickle=True).item()
+cosPsi22_shuff_rnn = np.load(f'{data_path}/' + 'cosPsi_22_shuff_rnn.npy', allow_pickle=True).item()
 
-cosTheta_choice_rnn = np.load(f'{phd_path}/' + 'cosTheta_choice_rnn.npy', allow_pickle=True).item()
-cosTheta_nonchoice_rnn = np.load(f'{phd_path}/' + 'cosTheta_nonchoice_rnn.npy', allow_pickle=True).item()
-cosPsi_choice_rnn = np.load(f'{phd_path}/' + 'cosPsi_choice_rnn.npy', allow_pickle=True).item()
-cosPsi_nonchoice_rnn = np.load(f'{phd_path}/' + 'cosPsi_nonchoice_rnn.npy', allow_pickle=True).item()
+cosTheta_choice_rnn = np.load(f'{data_path}/' + 'cosTheta_choice_rnn.npy', allow_pickle=True).item()
+cosTheta_nonchoice_rnn = np.load(f'{data_path}/' + 'cosTheta_nonchoice_rnn.npy', allow_pickle=True).item()
+cosPsi_choice_rnn = np.load(f'{data_path}/' + 'cosPsi_choice_rnn.npy', allow_pickle=True).item()
+cosPsi_nonchoice_rnn = np.load(f'{data_path}/' + 'cosPsi_nonchoice_rnn.npy', allow_pickle=True).item()
 
-cosTheta_choice_shuff_rnn = np.load(f'{phd_path}/' + 'cosTheta_choice_shuff_rnn.npy', allow_pickle=True).item()
-cosTheta_nonchoice_shuff_rnn = np.load(f'{phd_path}/' + 'cosTheta_nonchoice_shuff_rnn.npy', allow_pickle=True).item()
-cosPsi_choice_shuff_rnn = np.load(f'{phd_path}/' + 'cosPsi_choice_shuff_rnn.npy', allow_pickle=True).item()
-cosPsi_nonchoice_shuff_rnn = np.load(f'{phd_path}/' + 'cosPsi_nonchoice_shuff_rnn.npy', allow_pickle=True).item()
+cosTheta_choice_shuff_rnn = np.load(f'{data_path}/' + 'cosTheta_choice_shuff_rnn.npy', allow_pickle=True).item()
+cosTheta_nonchoice_shuff_rnn = np.load(f'{data_path}/' + 'cosTheta_nonchoice_shuff_rnn.npy', allow_pickle=True).item()
+cosPsi_choice_shuff_rnn = np.load(f'{data_path}/' + 'cosPsi_choice_shuff_rnn.npy', allow_pickle=True).item()
+cosPsi_nonchoice_shuff_rnn = np.load(f'{data_path}/' + 'cosPsi_nonchoice_shuff_rnn.npy', allow_pickle=True).item()
 
 # load precomputed performance from files
-performance1_item_rnn = np.load(f'{phd_path}/' + 'performance1_item_rnn.npy', allow_pickle=True).item()
-performance2_item_rnn = np.load(f'{phd_path}/' + 'performance2_item_rnn.npy', allow_pickle=True).item()
-performance1_item_shuff_rnn = np.load(f'{phd_path}/' + 'performance1_item_shuff_rnn.npy', allow_pickle=True).item()
-performance2_item_shuff_rnn = np.load(f'{phd_path}/' + 'performance2_item_shuff_rnn.npy', allow_pickle=True).item()
+performance1_item_rnn = np.load(f'{data_path}/' + 'performance1_item_rnn.npy', allow_pickle=True).item()
+performance2_item_rnn = np.load(f'{data_path}/' + 'performance2_item_rnn.npy', allow_pickle=True).item()
+performance1_item_shuff_rnn = np.load(f'{data_path}/' + 'performance1_item_shuff_rnn.npy', allow_pickle=True).item()
+performance2_item_shuff_rnn = np.load(f'{data_path}/' + 'performance2_item_shuff_rnn.npy', allow_pickle=True).item()
 
 # load precomputed geometries from files for baselines
-cosTheta11_bsl_rnn = np.load(f'{phd_path}/' + 'cosTheta_11_bsl_rnn.npy', allow_pickle=True).item()
-cosTheta12_bsl_rnn = np.load(f'{phd_path}/' + 'cosTheta_12_bsl_rnn.npy', allow_pickle=True).item()
-cosTheta22_bsl_rnn = np.load(f'{phd_path}/' + 'cosTheta_22_bsl_rnn.npy', allow_pickle=True).item()
-cosPsi11_bsl_rnn = np.load(f'{phd_path}/' + 'cosPsi_11_bsl_rnn.npy', allow_pickle=True).item()
-cosPsi12_bsl_rnn = np.load(f'{phd_path}/' + 'cosPsi_12_bsl_rnn.npy', allow_pickle=True).item()
-cosPsi22_bsl_rnn = np.load(f'{phd_path}/' + 'cosPsi_22_bsl_rnn.npy', allow_pickle=True).item()
+cosTheta11_bsl_rnn = np.load(f'{data_path}/' + 'cosTheta_11_bsl_rnn.npy', allow_pickle=True).item()
+cosTheta12_bsl_rnn = np.load(f'{data_path}/' + 'cosTheta_12_bsl_rnn.npy', allow_pickle=True).item()
+cosTheta22_bsl_rnn = np.load(f'{data_path}/' + 'cosTheta_22_bsl_rnn.npy', allow_pickle=True).item()
+cosPsi11_bsl_rnn = np.load(f'{data_path}/' + 'cosPsi_11_bsl_rnn.npy', allow_pickle=True).item()
+cosPsi12_bsl_rnn = np.load(f'{data_path}/' + 'cosPsi_12_bsl_rnn.npy', allow_pickle=True).item()
+cosPsi22_bsl_rnn = np.load(f'{data_path}/' + 'cosPsi_22_bsl_rnn.npy', allow_pickle=True).item()
 
 #%%
 
@@ -405,26 +405,26 @@ plt.show()
 ######################################
 
 #%% load precomputed code tranferability from file
-performanceX_Trans_12_data = np.load(f'{phd_path}/' + 'performance12X_Trans_data.npy', allow_pickle=True).item()
-performanceX_Trans_21_data = np.load(f'{phd_path}/' + 'performance21X_Trans_data.npy', allow_pickle=True).item()
-performanceX_Trans_12_shuff_data = np.load(f'{phd_path}/' + 'performance12X_Trans_shuff_data.npy', allow_pickle=True).item()
-performanceX_Trans_21_shuff_data = np.load(f'{phd_path}/' + 'performance21X_Trans_shuff_data.npy', allow_pickle=True).item()
+performanceX_Trans_12_data = np.load(f'{data_path}/' + 'performance12X_Trans_data.npy', allow_pickle=True).item()
+performanceX_Trans_21_data = np.load(f'{data_path}/' + 'performance21X_Trans_data.npy', allow_pickle=True).item()
+performanceX_Trans_12_shuff_data = np.load(f'{data_path}/' + 'performance12X_Trans_shuff_data.npy', allow_pickle=True).item()
+performanceX_Trans_21_shuff_data = np.load(f'{data_path}/' + 'performance21X_Trans_shuff_data.npy', allow_pickle=True).item()
 
-performanceX_Trans_12_rnn = np.load(f'{phd_path}/' + 'performanceX_12_rnn.npy', allow_pickle=True).item()
-performanceX_Trans_21_rnn = np.load(f'{phd_path}/' + 'performanceX_21_rnn.npy', allow_pickle=True).item()
-performanceX_Trans_12_shuff_rnn = np.load(f'{phd_path}/' + 'performanceX_12_shuff_rnn.npy', allow_pickle=True).item()
-performanceX_Trans_21_shuff_rnn = np.load(f'{phd_path}/' + 'performanceX_21_shuff_rnn.npy', allow_pickle=True).item()
+performanceX_Trans_12_rnn = np.load(f'{data_path}/' + 'performanceX_12_rnn.npy', allow_pickle=True).item()
+performanceX_Trans_21_rnn = np.load(f'{data_path}/' + 'performanceX_21_rnn.npy', allow_pickle=True).item()
+performanceX_Trans_12_shuff_rnn = np.load(f'{data_path}/' + 'performanceX_12_shuff_rnn.npy', allow_pickle=True).item()
+performanceX_Trans_21_shuff_rnn = np.load(f'{data_path}/' + 'performanceX_21_shuff_rnn.npy', allow_pickle=True).item()
 
 
-performance1_item_data = np.load(f'{phd_path}/' + 'performance1_item_data.npy', allow_pickle=True).item()
-performance2_item_data = np.load(f'{phd_path}/' + 'performance2_item_data.npy', allow_pickle=True).item()
-performance1_item_shuff_data = np.load(f'{phd_path}/' + 'performance1_item_shuff_data.npy', allow_pickle=True).item()
-performance2_item_shuff_data = np.load(f'{phd_path}/' + 'performance2_item_shuff_data.npy', allow_pickle=True).item()
+performance1_item_data = np.load(f'{data_path}/' + 'performance1_item_data.npy', allow_pickle=True).item()
+performance2_item_data = np.load(f'{data_path}/' + 'performance2_item_data.npy', allow_pickle=True).item()
+performance1_item_shuff_data = np.load(f'{data_path}/' + 'performance1_item_shuff_data.npy', allow_pickle=True).item()
+performance2_item_shuff_data = np.load(f'{data_path}/' + 'performance2_item_shuff_data.npy', allow_pickle=True).item()
 
-performance1_item_rnn = np.load(f'{phd_path}/' + 'performance1_item_rnn.npy', allow_pickle=True).item()
-performance2_item_rnn = np.load(f'{phd_path}/' + 'performance2_item_rnn.npy', allow_pickle=True).item()
-performance1_item_shuff_rnn = np.load(f'{phd_path}/' + 'performance1_item_shuff_rnn.npy', allow_pickle=True).item()
-performance2_item_shuff_rnn = np.load(f'{phd_path}/' + 'performance2_item_shuff_rnn.npy', allow_pickle=True).item()
+performance1_item_rnn = np.load(f'{data_path}/' + 'performance1_item_rnn.npy', allow_pickle=True).item()
+performance2_item_rnn = np.load(f'{data_path}/' + 'performance2_item_rnn.npy', allow_pickle=True).item()
+performance1_item_shuff_rnn = np.load(f'{data_path}/' + 'performance1_item_shuff_rnn.npy', allow_pickle=True).item()
+performance2_item_shuff_rnn = np.load(f'{data_path}/' + 'performance2_item_shuff_rnn.npy', allow_pickle=True).item()
 
 #%% get code transferability at specific checkpoints
 checkpoints = [150, 550, 1050, 1450, 1850, 2350]#
@@ -899,36 +899,36 @@ plt.show()
 
 #%% 
 # load precomputed code transferability from files
-performanceX_Trans_rdc_data = np.load(f'{phd_path}/' + 'performanceX_Trans_rdc_data.npy', allow_pickle=True).item()
-performanceX_Trans_drc_data = np.load(f'{phd_path}/' + 'performanceX_Trans_drc_data.npy', allow_pickle=True).item()
-performanceX_Trans_rdc_shuff_data = np.load(f'{phd_path}/' + 'performanceX_Trans_rdc_shuff_data.npy', allow_pickle=True).item()
-performanceX_Trans_drc_shuff_data = np.load(f'{phd_path}/' + 'performanceX_Trans_drc_shuff_data.npy', allow_pickle=True).item()
+performanceX_Trans_rdc_data = np.load(f'{data_path}/' + 'performanceX_Trans_rdc_data.npy', allow_pickle=True).item()
+performanceX_Trans_drc_data = np.load(f'{data_path}/' + 'performanceX_Trans_drc_data.npy', allow_pickle=True).item()
+performanceX_Trans_rdc_shuff_data = np.load(f'{data_path}/' + 'performanceX_Trans_rdc_shuff_data.npy', allow_pickle=True).item()
+performanceX_Trans_drc_shuff_data = np.load(f'{data_path}/' + 'performanceX_Trans_drc_shuff_data.npy', allow_pickle=True).item()
 
-performanceX_Trans_rdc_rnn = np.load(f'{phd_path}/' + 'performanceX_rdc_rnn.npy', allow_pickle=True).item()
-performanceX_Trans_drc_rnn = np.load(f'{phd_path}/' + 'performanceX_drc_rnn.npy', allow_pickle=True).item()
-performanceX_Trans_rdc_shuff_rnn = np.load(f'{phd_path}/' + 'performanceX_rdc_shuff_rnn.npy', allow_pickle=True).item()
-performanceX_Trans_drc_shuff_rnn = np.load(f'{phd_path}/' + 'performanceX_drc_shuff_rnn.npy', allow_pickle=True).item()
+performanceX_Trans_rdc_rnn = np.load(f'{data_path}/' + 'performanceX_rdc_rnn.npy', allow_pickle=True).item()
+performanceX_Trans_drc_rnn = np.load(f'{data_path}/' + 'performanceX_drc_rnn.npy', allow_pickle=True).item()
+performanceX_Trans_rdc_shuff_rnn = np.load(f'{data_path}/' + 'performanceX_rdc_shuff_rnn.npy', allow_pickle=True).item()
+performanceX_Trans_drc_shuff_rnn = np.load(f'{data_path}/' + 'performanceX_drc_shuff_rnn.npy', allow_pickle=True).item()
 
-performanceX_Trans_rdnc_data = np.load(f'{phd_path}/' + 'performanceX_Trans_rdnc_data.npy', allow_pickle=True).item()
-performanceX_Trans_drnc_data = np.load(f'{phd_path}/' + 'performanceX_Trans_drnc_data.npy', allow_pickle=True).item()
-performanceX_Trans_rdnc_shuff_data = np.load(f'{phd_path}/' + 'performanceX_Trans_rdnc_shuff_data.npy', allow_pickle=True).item()
-performanceX_Trans_drnc_shuff_data = np.load(f'{phd_path}/' + 'performanceX_Trans_drnc_shuff_data.npy', allow_pickle=True).item()
+performanceX_Trans_rdnc_data = np.load(f'{data_path}/' + 'performanceX_Trans_rdnc_data.npy', allow_pickle=True).item()
+performanceX_Trans_drnc_data = np.load(f'{data_path}/' + 'performanceX_Trans_drnc_data.npy', allow_pickle=True).item()
+performanceX_Trans_rdnc_shuff_data = np.load(f'{data_path}/' + 'performanceX_Trans_rdnc_shuff_data.npy', allow_pickle=True).item()
+performanceX_Trans_drnc_shuff_data = np.load(f'{data_path}/' + 'performanceX_Trans_drnc_shuff_data.npy', allow_pickle=True).item()
 
-performanceX_Trans_rdnc_rnn = np.load(f'{phd_path}/' + 'performanceX_rdnc_rnn.npy', allow_pickle=True).item()
-performanceX_Trans_drnc_rnn = np.load(f'{phd_path}/' + 'performanceX_drnc_rnn.npy', allow_pickle=True).item()
-performanceX_Trans_rdnc_shuff_rnn = np.load(f'{phd_path}/' + 'performanceX_rdnc_shuff_rnn.npy', allow_pickle=True).item()
-performanceX_Trans_drnc_shuff_rnn = np.load(f'{phd_path}/' + 'performanceX_drnc_shuff_rnn.npy', allow_pickle=True).item()
+performanceX_Trans_rdnc_rnn = np.load(f'{data_path}/' + 'performanceX_rdnc_rnn.npy', allow_pickle=True).item()
+performanceX_Trans_drnc_rnn = np.load(f'{data_path}/' + 'performanceX_drnc_rnn.npy', allow_pickle=True).item()
+performanceX_Trans_rdnc_shuff_rnn = np.load(f'{data_path}/' + 'performanceX_rdnc_shuff_rnn.npy', allow_pickle=True).item()
+performanceX_Trans_drnc_shuff_rnn = np.load(f'{data_path}/' + 'performanceX_drnc_shuff_rnn.npy', allow_pickle=True).item()
 
 
-performance1_item_data = np.load(f'{phd_path}/' + 'performance1_item_data.npy', allow_pickle=True).item()
-performance2_item_data = np.load(f'{phd_path}/' + 'performance2_item_data.npy', allow_pickle=True).item()
-performance1_item_shuff_data = np.load(f'{phd_path}/' + 'performance1_item_shuff_data.npy', allow_pickle=True).item()
-performance2_item_shuff_data = np.load(f'{phd_path}/' + 'performance2_item_shuff_data.npy', allow_pickle=True).item()
+performance1_item_data = np.load(f'{data_path}/' + 'performance1_item_data.npy', allow_pickle=True).item()
+performance2_item_data = np.load(f'{data_path}/' + 'performance2_item_data.npy', allow_pickle=True).item()
+performance1_item_shuff_data = np.load(f'{data_path}/' + 'performance1_item_shuff_data.npy', allow_pickle=True).item()
+performance2_item_shuff_data = np.load(f'{data_path}/' + 'performance2_item_shuff_data.npy', allow_pickle=True).item()
 
-performance1_item_rnn = np.load(f'{phd_path}/' + 'performance1_item_rnn.npy', allow_pickle=True).item()
-performance2_item_rnn = np.load(f'{phd_path}/' + 'performance2_item_rnn.npy', allow_pickle=True).item()
-performance1_item_shuff_rnn = np.load(f'{phd_path}/' + 'performance1_item_shuff_rnn.npy', allow_pickle=True).item()
-performance2_item_shuff_rnn = np.load(f'{phd_path}/' + 'performance2_item_shuff_rnn.npy', allow_pickle=True).item()
+performance1_item_rnn = np.load(f'{data_path}/' + 'performance1_item_rnn.npy', allow_pickle=True).item()
+performance2_item_rnn = np.load(f'{data_path}/' + 'performance2_item_rnn.npy', allow_pickle=True).item()
+performance1_item_shuff_rnn = np.load(f'{data_path}/' + 'performance1_item_shuff_rnn.npy', allow_pickle=True).item()
+performance2_item_shuff_rnn = np.load(f'{data_path}/' + 'performance2_item_shuff_rnn.npy', allow_pickle=True).item()
 
 #%%
 checkpoints = [150, 550, 1150, 1450, 1850, 2350]#
