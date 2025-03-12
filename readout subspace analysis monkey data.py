@@ -523,96 +523,12 @@ np.save(f'{data_path}/' + 'performance_ttW_readout_data.npy', decode_ttW, allow_
 np.save(f'{data_path}/' + 'performance_ttX_readout_shuff_data.npy', decode_ttX_shuff, allow_pickle=True)
 np.save(f'{data_path}/' + 'performance_ttW_readout_shuff_data.npy', decode_ttW_shuff, allow_pickle=True)
 
-#%% readout vs. item-specific subspace
-# load item-specific plane vectors
-vecs = np.load(f'{data_path}/' + 'vecs_detrended.npy', allow_pickle=True).item() #
-projs = np.load(f'{data_path}/' + 'projs_detrended.npy', allow_pickle=True).item() #
-projsAll = np.load(f'{data_path}/' + 'projsAll_detrended.npy', allow_pickle=True).item() #
-trialInfos = np.load(f'{data_path}/' + 'trialInfos_detrended.npy', allow_pickle=True).item() #
-pca1s = np.load(f'{data_path}/' + 'pca1s_detrended.npy', allow_pickle=True).item() #
-
-vecs_shuff = np.load(f'{data_path}/' + 'vecs_shuff_detrended.npy', allow_pickle=True).item() #
-projs_shuff = np.load(f'{data_path}/' + 'projs_shuff_detrended.npy', allow_pickle=True).item() #
-projsAll_shuff = np.load(f'{data_path}/' + 'projsAll_shuff_detrended.npy', allow_pickle=True).item() #
-trialInfos_shuff = np.load(f'{data_path}/' + 'trialInfos_shuff_detrended.npy', allow_pickle=True).item() #
-pca1s_shuff = np.load(f'{data_path}/' + 'pca1s_shuff_detrended.npy', allow_pickle=True).item() #
-
-# exclude post-gocue window
-checkpoints = [150, 550, 1050, 1450, 1850, 2350]#
-checkpointsLabels = ['S1','ED1','LD1','S2','ED2','LD2']
-
-pdummy = True #False #
-nIters = 100
-nPerms = 100
-nBoots = 1
-cosTheta_1C, cosTheta_2C = {},{}
-cosPsi_1C, cosPsi_2C = {},{}
-
-# shuff
-cosTheta_1C_shuff, cosTheta_2C_shuff = {},{}
-cosPsi_1C_shuff, cosPsi_2C_shuff = {},{}
-
-for region in ('dlpfc','fef'):
-    
-    cosTheta_1C[region], cosTheta_2C[region] = {},{}
-    cosPsi_1C[region], cosPsi_2C[region] = {},{}    
-    cosTheta_1C_shuff[region], cosTheta_2C_shuff[region] = {},{}
-    cosPsi_1C_shuff[region], cosPsi_2C_shuff[region] = {},{}
-    
-    for tt in ttypes:
-        cosTheta_1CT = np.zeros((nIters, nBoots, len(checkpoints)))
-        cosTheta_2CT = np.zeros((nIters, nBoots, len(checkpoints)))
-        cosPsi_1CT = np.zeros((nIters, nBoots, len(checkpoints)))
-        cosPsi_2CT = np.zeros((nIters, nBoots, len(checkpoints)))
-        
-    
-        cosTheta_1C_shuffT = np.zeros((nIters, nPerms, len(checkpoints)))
-        cosTheta_2C_shuffT = np.zeros((nIters, nPerms, len(checkpoints)))
-        cosPsi_1C_shuffT = np.zeros((nIters, nPerms, len(checkpoints)))
-        cosPsi_2C_shuffT = np.zeros((nIters, nPerms, len(checkpoints)))
-        
-        for n in range(nIters):
-            if n%20==0:
-                print(n)
-                
-            for nbt in range(nBoots):
-                for nc, cp in enumerate(checkpoints):
-                    cT1C, _, cP1C, _, _ = f_subspace.angle_alignment_coplanar(vecs[region][cp][tt][1][n][nbt], projs[region][cp][tt][1][n][nbt], vecs_C[region][n][nbt], projs_C[region][n][nbt])
-                    cT2C, _, cP2C, _, _ = f_subspace.angle_alignment_coplanar(vecs[region][cp][tt][2][n][nbt], projs[region][cp][tt][2][n][nbt], vecs_C[region][n][nbt], projs_C[region][n][nbt])
-                    
-                    cosTheta_1CT[n,nbt,nc], cosTheta_2CT[n,nbt,nc] = cT1C, cT2C# 
-                    cosPsi_1CT[n,nbt,nc], cosPsi_2CT[n,nbt,nc] = cP1C, cP2C#
-                    
-            
-            for npm in range(nPerms):
-                    for nc, cp in enumerate(checkpoints):
-                        
-                        cT1C_shuff, _, cP1C_shuff, _, _ = f_subspace.angle_alignment_coplanar(vecs_shuff[region][cp][tt][1][n][npm], projs_shuff[region][cp][tt][1][n][npm], 
-                                                                                  vecs_C[region][n][0], projs_C[region][n][0])
-                        cT2C_shuff, _, cP2C_shuff, _, _ = f_subspace.angle_alignment_coplanar(vecs_shuff[region][cp][tt][2][n][npm], projs_shuff[region][cp][tt][2][n][npm], 
-                                                                                  vecs_C[region][n][0], projs_C[region][n][0])
-                        cosTheta_1C_shuffT[n,npm,nc], cosTheta_2C_shuffT[n,npm,nc] = cT1C_shuff, cT2C_shuff
-                        cosPsi_1C_shuffT[n,npm,nc], cosPsi_2C_shuffT[n,npm,nc] = cP1C_shuff, cP2C_shuff
-                        
-        cosTheta_1C[region][tt] = cosTheta_1CT
-        cosTheta_2C[region][tt] = cosTheta_2CT
-        cosPsi_1C[region][tt] = cosPsi_1CT
-        cosPsi_2C[region][tt] = cosPsi_2CT
-        
-        cosTheta_1C_shuff[region][tt] = cosTheta_1C_shuffT
-        cosTheta_2C_shuff[region][tt] = cosTheta_2C_shuffT
-        cosPsi_1C_shuff[region][tt] = cosPsi_1C_shuffT
-        cosPsi_2C_shuff[region][tt] = cosPsi_2C_shuffT       
-
-#%% save
-np.save(f'{data_path}/' + 'cosTheta_1Read_data.npy', cosTheta_1C, allow_pickle=True)
-np.save(f'{data_path}/' + 'cosTheta_2Read_data.npy', cosTheta_2C, allow_pickle=True)
-np.save(f'{data_path}/' + 'cosPsi_1Read_data.npy', cosPsi_1C, allow_pickle=True)
-np.save(f'{data_path}/' + 'cosPsi_2Read_data.npy', cosPsi_2C, allow_pickle=True)
 
 #%%
 
-
+##################################################
+# drift distance of readout subspace projections #
+##################################################
 
 #%% retarget vs distraction drift distances, normalization -1 to 1
 
