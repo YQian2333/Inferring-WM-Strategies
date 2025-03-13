@@ -1,7 +1,18 @@
 # Pseudo Population and RNN Strategy Analysis
 
 ## Tested Environment
-- Python 3.10
+- Python: v3.10
+- OS: Windows 10/11
+
+## Dependencies
+This project requires the following Python libraries:
+- `numpy`
+- `scipy`
+- `scikit-learn`
+- `pytorch`
+- `pandas`
+- `matplotlib`
+- `seaborn`
 
 ## Dataset
 To create pseudo-populations used for biological data analyses, download dataset files from:
