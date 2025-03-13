@@ -154,6 +154,7 @@ for nfi, kfi in enumerate(fitIntervals):
 ###########################
 
 #%% compute decodability
+
 performancesX1, performancesX2 = {},{}
 performancesX1_shuff, performancesX2_shuff = {},{}
 performancesXtt, performancesXtt_shuff = {},{}
@@ -179,10 +180,12 @@ for nfi, kfi in enumerate(fitIntervals):
         print(i)
         modelD = models_dict[i]['rnn']
         
+        # for demo purposes, we reduced the number of bootstraps to 10 to save time 
+        
         # calculate EVR of full space (PC1-15)        
         evrsT = f_evaluateRNN.rnns_EVRs(modelD, trialInfo, X_, Y0_, tRange, dt = 50, bins = 50, 
                                         nPCs = (0,15), nIters = 1, nBoots = 10, pca_tWins = ((300,1300), (1600,2600),), 
-                                        pDummy = True, label=f'{strategyLabel} ', toPlot = False, shuff_excludeInv = False)
+                                        pDummy = True, label=f'{strategyLabel} ', toPlot = False, shuff_excludeInv = False) 
 
         # calculate decodability of item1 and item2
         pfmsX12T, pfmsX12_shuffT, evrsT = f_evaluateRNN.rnns_lda12X(modelD, trialInfo, X_, Y0_, tRange, dt = 50, bins = 50, 
@@ -310,7 +313,7 @@ checkpoints = [150, 550, 1050, 1450, 1850, 2350]#
 checkpointsLabels = ['S1','ED1','LD1','S2','ED2','LD2'] #, 2800
 avgInterval = {150:150, 550:250, 1050:250, 1450:150, 1850:250, 2350:250} #, 2800:200
 nPerms = 100
-nBoots = 100
+nBoots = 10#0 # for demo purposes, we reduced the number of bootstraps to 10 to save time 
 infoMethod='lda'
 
 # items v item
@@ -573,7 +576,7 @@ np.save(f'{data_path}/' + 'performanceX2_readout_shuff_rnn.npy', infos_C2X_shuff
 hideLocs=(0,2)
 
 nPerms = 100
-nBoots = 100
+nBoots = 10 #0 # for demo purposes, we reduced the number of bootstraps to 10 to save time 
 
 bins = 50
 end_D1s, end_D2s = np.arange(800,1300+bins,bins), np.arange(2100,2600+bins,bins)

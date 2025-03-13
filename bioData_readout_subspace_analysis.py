@@ -22,6 +22,8 @@ import f_subspace
 
 #%% initialize parameters
 data_path = 'D:/data' 
+pseudoPop_path = 'D:/data/pseudoPop' # change to your own save path
+
 tRangeRaw = np.arange(-500,4000,1) # -300 baseline, 0 onset, 300 pre1, 1300 delay1, 1600 pre2, 2600 delay2, response
 
 step = 50
@@ -42,7 +44,7 @@ slice_epochsDic = {'bsl':[-300,0],'s1':[0,300],'d1':[300,1300],'s2':[1300,1600],
 
 nIters = 100
 nPerms = 100
-nBoots = 1
+nBoots = 10 # for demo purposes, we reduced the number of bootstraps to 10 to save time 
 fracBoots = 1.0
 
 tBsl = (-300,0)
@@ -106,7 +108,7 @@ for n in range(nIters):
     t_IterOn = time.time()
     print(f'Iter = {n}')
     
-    pseudo_data = np.load(data_path + f'/pseudo_all{n}.npy', allow_pickle=True).item()
+    pseudo_data = np.load(pseudoPop_path + f'/pseudo_all{n}.npy', allow_pickle=True).item()
     pseudo_region = pseudo_data['pseudo_region']
     pseudo_TrialInfo = pseudo_data['pseudo_TrialInfo']
 

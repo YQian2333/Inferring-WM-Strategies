@@ -45,7 +45,7 @@ subConditions = list(product(locCombs, ttypes))
     
 #%% initialize variables and decoding params
 nIters = 100
-nBoots = 100
+nBoots = 10 #0 # for demo purposes, we reduced the number of bootstraps to 10 to save time 
 nPerms = nBoots
 tbins = np.arange(tslice[0], tslice[1], bins)
 
