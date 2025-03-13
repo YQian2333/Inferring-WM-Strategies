@@ -1,9 +1,3 @@
-# -*- coding: utf-8 -*-
-"""
-Created on Thu Mar 28 14:23:51 2024
-
-@author: aka2333
-"""
 #%%
 # interactive window settings
 %reload_ext autoreload
@@ -51,12 +45,6 @@ accFracs = (1, 0, 0) # fraction of correct, random incorrect (non-displayed-irre
 trialInfo = f_simulation.generate_trials_balance(N_trials, locs, ttypes, accFracs) # generate trials with balanced number per condition
 N_trials = len(trialInfo) # recalculate N_trials based on generated trials
 
-#%%
-
-###############
-# 8ch version #
-###############
-
 #%% simulate input time series
 
 # input signal parameters
@@ -103,81 +91,8 @@ Y0_ = torch.tensor(Y0, dtype=torch.float32).to(device)
 #%% define fitting windows for different strategies
 fitIntervals = {'R@R':((0,1300),(1600,2600),), 'R&U':((300,1300), (1600,2600),), } 
 
-#%%
-
-##############
-# train RNNs #
-##############
-
-#%% train RNNs
-nModels = 100 #number of models to be trained per strategy
-withBsl = True if tRange.min() <0 else False # include baseline to fitting or not
-
-expectedFull = 1 # expected correct output at the target time
-
-modelDicts = {} # save trained models
-
-for nfi, kfi in enumerate(fitIntervals):
-    
-    print(kfi)
-    modelDicts[kfi] = {i:{} for i in range(nModels)}
-    
-    expected1 = expectedFull if kfi == 'R&U' else expected0 # expected output during first interval, varied by strategy
-    expected2 = expectedFull # expected output during second interval, assumed always at full level
-    
-    fi1 = fitIntervals[kfi][0]
-    #Y1_Bonds = fi1
-    
-    if len(fitIntervals[kfi]) == 1:
-        # if R@R strategy, use full expected output and fit to the final choice location
-        Y1 = f_simulation.generate_Y(N_out, trialInfo.choice.values, fi1[0], fi1[1], dt, expectedFull)
-    else:
-        # if R&U strategy, use expected output during first interval
-        Y1 = f_simulation.generate_Y(N_out, trialInfo.loc1.values, fi1[0], fi1[1], dt, expected1)
-        
-    Y1_ = torch.tensor(Y1, dtype=torch.float32).to(device)
-    
-    if len(fitIntervals[kfi])>1:
-        
-        fi2 = fitIntervals[kfi][1] # fit interval 2, only applicable to R&U
-        #Y2_Bonds = fi2
-        Y2 = f_simulation.generate_Y(N_out, trialInfo.choice.values, fi2[0], fi2[1], dt, expected2)
-        Y2_ = torch.tensor(Y2, dtype=torch.float32).to(device)
-    
-    Ys_ = ((Y0_,Y0_Bonds,1,), ) if withBsl else ()
-    
-    regWeight1 = 3 if kfi == 'R&U' else 5 #0.5 # regularization weight of first interval
-    regWeight2 = 3 if kfi == 'R&U' else 3 #0.5 # regularization weight of second interval
-    
-    # wrap Ys_ in a tuple
-    if len(fitIntervals[kfi])>1:
-        Ys_ += ((Y1_,fi1,regWeight1,),(Y2_,fi2,regWeight2,),) 
-    else: 
-        Ys_ += ((Y1_,fi1,regWeight1,),) 
-    
-    
-    for i in range(nModels):
-        print(f'model n={i}')
-        
-        # initialize RNN
-        modelD = myRNNs.decayRNN(N_in, N_hidden, N_out, dt = dt, tau = tau, external = ext, hidden_noise = hidden_noise, ceiling = ceiling, 
-                                 F_hidden = F_hidden, F_out = F_out, device= device, init_hidden='orthogonal_', useLinear_hidden = False, seed = i).to(device)
-        
-        # train RNN
-        losses = f_trainRNN.train_model(modelD, trialInfo, X_, Ys_, tRange, frac = 0.2, criterion = nn.MSELoss(), 
-                                        learning_rate = 0.0001, n_iter = 1000*5, loss_cutoff = 0.001, lr_cutoff = 1e-7, l2reg=False)
-        
-        # save model and losses
-        modelDicts[kfi][i]['rnn'] = modelD
-        modelDicts[kfi][i]['losses'] = losses
-                
-        del modelD
-        torch.cuda.empty_cache()
-        
-        gc.collect()
-
-#%% save trained models
-np.save(f'{data_path}/modelDicts.npy', modelDicts, allow_pickle=True)
+#%% load pretrained RNNs
+modelDicts = np.load(f'{data_path}/modelDicts.npy', allow_pickle=True).item()
 
 
 #%%
@@ -318,111 +233,7 @@ np.save(f'{data_path}/' + 'performanceX2_full_shuff_rnn.npy', performancesX2_shu
 np.save(f'{data_path}/' + 'performanceXtt_full_rnn.npy', performancesXtt, allow_pickle=True)
 np.save(f'{data_path}/' + 'performanceXtt_full_shuff_rnn.npy', performancesXtt_shuff, allow_pickle=True)
 
-#%% [Figure 2A] plot item decodability full space
-for nfi, kfi in enumerate(fitIntervals):
-    print(kfi)
-    strategyLabel = 'Rehearse & Update' if kfi == 'R&U' else 'Retrieve at Recall'
 
-    pfmX1 = performancesX1[kfi]
-    pfmX2 = performancesX2[kfi]
-    pfmX1_shuff = performancesX1_shuff[kfi]
-    pfmX2_shuff = performancesX2_shuff[kfi]
-    
-    bins = 50
-    tslice = (tRange.min(), tRange.max()+dt)
-    tbins = np.arange(tslice[0], tslice[1], bins) #
-    
-    if len(pfmX1[1])>0:
-        conditions = (('ttype', 1), ('ttype', 2))
-        fig = plt.figure(figsize=(28, 24), dpi=100)
-        
-        for condition in conditions:
-            
-            ttypeT = 'Retarget' if condition[-1]==1 else 'Distractor'
-            ttypeT_ = 'Retarget' if condition[-1]==1 else 'Distraction'
-            tt = 1 if condition[-1]==1 else 2
-                                
-            pfmTX1 = np.array(pfmX1[tt]).squeeze().mean(1)
-            pfmTX2 = np.array(pfmX2[tt]).squeeze().mean(1)
-            pfmTX1_shuff = np.array(pfmX1_shuff[tt]).squeeze().mean(1)
-            pfmTX2_shuff = np.array(pfmX2_shuff[tt]).squeeze().mean(1)
-            
-            # calculate permutation p values at each timebin
-            pPerms_pfm1 = np.ones((len(tbins), len(tbins)))
-            pPerms_pfm2 = np.ones((len(tbins), len(tbins)))
-            for t in range(len(tbins)):
-                for t_ in range(len(tbins)):
-                    pPerms_pfm1[t, t_] = f_stats.permutation_pCI(pfmTX1[:,t,t_], pfmTX1_shuff[:,t,t_], tail='greater', alpha=5)
-                    pPerms_pfm2[t, t_] = f_stats.permutation_pCI(pfmTX2[:,t,t_], pfmTX2_shuff[:,t,t_], tail='greater', alpha=5)
-            
-            
-            # plot decoding performance of item 1
-            vmax = 1
-            plt.subplot(2,2,tt)
-            ax = plt.gca()
-            sns.heatmap(pd.DataFrame(pfmTX1.mean(0), index=tbins,columns=tbins), cmap = 'magma', vmin = 0.0, vmax = vmax, ax = ax)#, vmax = 0.6, xticklabels = 100, yticklabels = 100, vmin = cbar_min, vmax = cbar_max
-            
-            # outline significant timebins
-            smooth_scale = 10
-            z = ndimage.zoom(pPerms_pfm1, smooth_scale)
-            ax.contour(np.linspace(0, len(tbins), len(tbins) * smooth_scale),
-                    np.linspace(0, len(tbins), len(tbins) * smooth_scale),
-                    z, levels=([0.05]), colors='white', alpha = 1, linewidths = 3)
-            
-            ax.invert_yaxis()
-            
-            # adjust labels
-            for i in [0, 1300, 2600]:
-                ax.plot(tbins, np.full_like(tbins,list(tbins).index(i)), 'w-.', linewidth=4)
-                ax.plot(np.full_like(tbins,list(tbins).index(i)), tbins, 'w-.', linewidth=4)
-            
-            ax.set_xticks([list(tbins).index(i) for i in [0, 1300, 2600]])
-            ax.set_xticklabels(['S1','S2','Go Cue'], rotation=0, fontsize = 20)
-            ax.set_xlabel('Test Timebin (ms)', labelpad = 10, fontsize = 25)
-            ax.set_yticks([list(tbins).index(i) for i in [0, 1300, 2600]])
-            ax.set_yticklabels(['S1','S2','Go Cue'], fontsize = 20)
-            ax.set_ylabel('Train Timebin (ms)', labelpad = 10, fontsize = 25)
-            
-            cbar = ax.collections[0].colorbar
-            cbar.ax.tick_params(labelsize=20)
-            ax.set_title(f'{ttypeT_}, Item1', fontsize = 30, pad = 20)
-            
-            
-            # plot decoding performance of item 2
-            plt.subplot(2,2,tt+2)
-            ax = plt.gca()
-            sns.heatmap(pd.DataFrame(pfmTX2.mean(0), index=tbins,columns=tbins), cmap = 'magma', vmin = 0.0, vmax = vmax, ax = ax)#, vmax = 0.6, xticklabels = 100, yticklabels = 100, vmin = cbar_min, vmax = cbar_max
-            
-            # outline significant timebins
-            smooth_scale = 10
-            z = ndimage.zoom(pPerms_pfm2, smooth_scale)
-            ax.contour(np.linspace(0, len(tbins), len(tbins) * smooth_scale),
-                    np.linspace(0, len(tbins), len(tbins) * smooth_scale),
-                    z, levels=([0.05]), colors='white', alpha = 1, linewidths = 3)
-            
-            ax.invert_yaxis()
-            
-            # adjust labels
-            for i in [0, 1300, 2600]:
-                ax.plot(tbins, np.full_like(tbins,list(tbins).index(i)), 'w-.', linewidth=4)
-                ax.plot(np.full_like(tbins,list(tbins).index(i)), tbins, 'w-.', linewidth=4)
-            
-            ax.set_xticks([list(tbins).index(i) for i in [0, 1300, 2600]])
-            ax.set_xticklabels(['S1','S2','Go Cue'], rotation=0, fontsize = 20)
-            ax.set_xlabel('Test Timebin (ms)', labelpad = 10, fontsize = 25)
-            ax.set_yticks([list(tbins).index(i) for i in [0, 1300, 2600]])
-            ax.set_yticklabels(['S1','S2','Go Cue'], fontsize = 20)
-            ax.set_ylabel('Train Timebin (ms)', labelpad = 10, fontsize = 25)
-            
-            cbar = ax.collections[0].colorbar
-            cbar.ax.tick_params(labelsize=20)
-            ax.set_title(f'{ttypeT_}, Item2', fontsize = 30, pad = 20)
-            
-        plt.tight_layout()
-        plt.subplots_adjust(top = 0.95)
-        plt.suptitle(f'{strategyLabel}, Full Space', fontsize = 35, y=1) #, Arti_Noise = {arti_noise_level}
-        plt.show()
-        
 #%% plot trial type decodability full space        
 for nfi, kfi in enumerate(fitIntervals):
     print(kfi)
@@ -751,122 +562,7 @@ np.save(f'{data_path}/' + 'performanceX2_readout_rnn.npy', infos_C2X, allow_pick
 np.save(f'{data_path}/' + 'performanceX1_readout_shuff_rnn.npy', infos_C1X_shuff, allow_pickle=True)
 np.save(f'{data_path}/' + 'performanceX2_readout_shuff_rnn.npy', infos_C2X_shuff, allow_pickle=True)
 
-#%% [Figure S4A] plot readout decodability
-for nfi, kfi in enumerate(fitIntervals):
-    print(kfi)
-    info3d_1,info3d_2 = info3ds_1[kfi], info3ds_2[kfi]
-    info_C1X,info_C2X = infos_C1X[kfi], infos_C2X[kfi] 
 
-    info3d_1_shuff,info3d_2_shuff = info3ds_1_shuff[kfi], info3ds_2_shuff[kfi]
-    info_C1X_shuff,info_C2X_shuff = infos_C1X_shuff[kfi], infos_C2X_shuff[kfi] 
-
-
-    label = f'fit interval:{kfi}'
-    strategyLabel = 'Rehearse & Update' if kfi == 'R&U' else 'Retrieve at Recall'
-        
-            
-    ########################################
-    # plot info on choice plane cross temp #
-    ########################################
-    decode_projC1X_3d = {1:np.array([info_C1X[i][1].mean(0).mean(0) for i in range(len(info_C1X))]),
-                         2:np.array([info_C1X[j][2].mean(0).mean(0) for j in range(len(info_C1X))])}
-    decode_projC2X_3d = {1:np.array([info_C2X[i][1].mean(0).mean(0) for i in range(len(info_C2X))]),
-                         2:np.array([info_C2X[j][2].mean(0).mean(0) for j in range(len(info_C2X))])}
-    
-    decode_projC1X_3d_shuff = {1:np.array([info_C1X_shuff[i][1].mean(0).mean(0) for i in range(len(info_C1X_shuff))]),
-                         2:np.array([info_C1X_shuff[j][2].mean(0).mean(0) for j in range(len(info_C1X_shuff))])}
-    decode_projC2X_3d_shuff = {1:np.array([info_C2X_shuff[i][1].mean(0).mean(0) for i in range(len(info_C2X_shuff))]),
-                         2:np.array([info_C2X_shuff[j][2].mean(0).mean(0) for j in range(len(info_C2X_shuff))])}
-    
-
-    infoLabel = 'Accuracy' if infoMethod=='lda' else 'PEV'
-    
-    if len(decode_projC1X_3d[1])>0:
-        fig = plt.figure(figsize=(28, 24), dpi=100)
-        
-        for tt in ttypes:
-            
-            condT = 'Retarget' if tt == 1 else 'Distraction'
-            h0 = 0 if infoMethod == 'omega2' else 1/len(locs)
-            
-            pfm1, pfm2 = decode_projC1X_3d[tt], decode_projC2X_3d[tt]
-            
-            pPerms_decode1_3d = np.ones((len(tbins), len(tbins)))
-            pPerms_decode2_3d = np.ones((len(tbins), len(tbins)))
-            
-            for t in range(len(tbins)):
-                for t_ in range(len(tbins)):
-                    pPerms_decode1_3d[t, t_] = f_stats.permutation_pCI(decode_projC1X_3d[tt][:,t,t_], decode_projC1X_3d_shuff[tt][:,t,t_], alpha=5, tail='greater')
-                    pPerms_decode2_3d[t, t_] = f_stats.permutation_pCI(decode_projC2X_3d[tt][:,t,t_], decode_projC2X_3d_shuff[tt][:,t,t_], alpha=5, tail='greater')
-                    
-            
-            
-            # item1
-            plt.subplot(2,2,tt)
-            ax = plt.gca()
-            sns.heatmap(pd.DataFrame(pfm1.mean(0), index=tbins,columns=tbins), cmap = 'magma', vmin = 0.0, vmax = 1, ax = ax)
-            smooth_scale = 10
-            z = ndimage.zoom(pPerms_decode1_3d, smooth_scale)
-            ax.contour(np.linspace(0, len(tbins), len(tbins) * smooth_scale),
-                    np.linspace(0, len(tbins), len(tbins) * smooth_scale),
-                    z, levels=([0.01]), colors='white', alpha = 1, linewidths = 3)
-            
-            ax.invert_yaxis()
-            
-            
-            # event lines
-            for i in [0, 1300, 2600]:
-                ax.plot(tbins, np.full_like(tbins,list(tbins).index(i)), 'w-.', linewidth=4)
-                ax.plot(np.full_like(tbins,list(tbins).index(i)), tbins, 'w-.', linewidth=4)
-            
-            ax.set_xticks([list(tbins).index(i) for i in [0, 1300, 2600]])
-            ax.set_xticklabels(['S1','S2','Go Cue'], rotation=0, fontsize = 20)
-            ax.set_xlabel('Test Timebin (ms)', labelpad = 10, fontsize = 25)
-            ax.set_yticks([list(tbins).index(i) for i in [0, 1300, 2600]])
-            ax.set_yticklabels(['S1','S2','Go Cue'], fontsize = 20)
-            ax.set_ylabel('Train Timebin (ms)', labelpad = 10, fontsize = 25)
-            
-            cbar = ax.collections[0].colorbar
-            # here set the labelsize by 20
-            cbar.ax.tick_params(labelsize=20)
-            
-            ax.set_title(f'{condT}, Item1', fontsize = 30, pad = 20)
-            
-            # item2
-            plt.subplot(2,2,tt+2)
-            ax = plt.gca()
-            sns.heatmap(pd.DataFrame(pfm2.mean(0), index=tbins,columns=tbins), cmap = 'magma', vmin = 0.0, vmax = 1, ax = ax)
-            smooth_scale = 10
-            z = ndimage.zoom(pPerms_decode2_3d, smooth_scale)
-            ax.contour(np.linspace(0, len(tbins), len(tbins) * smooth_scale),
-                    np.linspace(0, len(tbins), len(tbins) * smooth_scale),
-                    z, levels=([0.01]), colors='white', alpha = 1, linewidths = 3)
-            
-            ax.invert_yaxis()
-            
-            
-            # event lines
-            for i in [0, 1300, 2600]:
-                ax.plot(tbins, np.full_like(tbins,list(tbins).index(i)), 'w-.', linewidth=4)
-                ax.plot(np.full_like(tbins,list(tbins).index(i)), tbins, 'w-.', linewidth=4)
-            
-            ax.set_xticks([list(tbins).index(i) for i in [0, 1300, 2600]])
-            ax.set_xticklabels(['S1','S2','Go Cue'], rotation=0, fontsize = 20)
-            ax.set_xlabel('Test Timebin (ms)', labelpad = 10, fontsize = 25)
-            ax.set_yticks([list(tbins).index(i) for i in [0, 1300, 2600]])
-            ax.set_yticklabels(['S1','S2','Go Cue'], fontsize = 20)
-            ax.set_ylabel('Train Timebin (ms)', labelpad = 10, fontsize = 25)
-            
-            cbar = ax.collections[0].colorbar
-            # here set the labelsize by 20
-            cbar.ax.tick_params(labelsize=20)
-            
-            ax.set_title(f'{condT}, Item2', fontsize = 30, pad = 20)
-        
-        plt.tight_layout()
-        plt.subplots_adjust(top = 0.95)
-        plt.suptitle(f'{strategyLabel}, Readout Subspace', fontsize = 35, y=1) #, Arti_Noise = {arti_noise_level}
-        plt.show()
 #%%
 
 ######################################
@@ -924,36 +620,3 @@ for nfi, kfi in enumerate(fitIntervals):
 #%% save computed drift distances
 np.save(f'{data_path}/' + 'euDists_rnns_centroids2_normalized.npy', euDists_centroids2, allow_pickle=True)
 np.save(f'{data_path}/' + 'euDists_rnns_centroids2_shuff_normalized.npy', euDists_centroids2_shuff, allow_pickle=True)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

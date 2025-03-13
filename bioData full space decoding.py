@@ -2,37 +2,31 @@
 %reload_ext autoreload
 %autoreload 2
 
-from itertools import permutations, combinations, product
+from itertools import permutations, product
 import time
 import warnings
 warnings.simplefilter(action='ignore', category=FutureWarning)
 
 import numpy as np
-import scipy
-from scipy import stats
-from scipy import ndimage
-
 import pandas as pd
-import statsmodels.api as sm
-from statsmodels.formula.api import ols
-from statsmodels.sandbox.stats.multicomp import multipletests
 
-import matplotlib.pyplot as plt
-import re, seaborn as sns
-
-import sklearn
 from sklearn.decomposition import PCA
 
 import f_stats
 import f_decoding
 
-#%% set load and save paths
+#%% initialize load and save paths and parameters
 data_path = 'D:/data' # change to your own data path
 pseudoPop_path = 'D:/data/pseudoPop' # change to your own save path
 dt = 10 # sampling rate
 monkey_names = 'all' # pooled pseudo population from both monkeys
 
-#%% decode from pseudo population
+bins = 50 # smoothed bins
+tslice = (-300,2700)
+tsliceRange = np.arange(-300,2700,dt)
+slice_epochsDic = {'bsl':[-300,0],'s1':[0,300],'d1':[300,1300],'s2':[1300,1600],'d2':[1600,2600],'go':[2600,3000]} # used for pooled pseudo pop or monkey B individually
+#slice_epochsDic = {'bsl':[-300,0],'s1':[0,400],'d1':[400,1400],'s2':[1400,1800],'d2':[1800,2800],'go':[2600,3000]} # used for monkey A individually
+
 pd.options.mode.chained_assignment = None
 epsilon = 1e-7
 
@@ -41,12 +35,6 @@ locs = (0,1,2,3,)
 locCombs = list(permutations(locs,2))
 ttypes = (1,2,)
 subConditions = list(product(locCombs, ttypes))
-#%% decodability with/without permutation P value
-bins = 50 # smoothed bins
-tslice = (-300,2700)
-tsliceRange = np.arange(-300,2700,dt)
-slice_epochsDic = {'bsl':[-300,0],'s1':[0,300],'d1':[300,1300],'s2':[1300,1600],'d2':[1600,2600],'go':[2600,3000]} # used for pooled pseudo pop or monkey B individually
-#slice_epochsDic = {'bsl':[-300,0],'s1':[0,400],'d1':[400,1400],'s2':[1400,1800],'d2':[1800,2800],'go':[2600,3000]} # used for monkey A individually
 
 #%%
 
@@ -284,145 +272,9 @@ for n in range(nIters):
 
 
 #%% save full space decodability and EVRs
-np.save(f'{data_path}/' + f'performanceX1_{monkey_names}_data.npy', performance1X, allow_pickle=True)
-np.save(f'{data_path}/' + f'performanceX2_{monkey_names}_data.npy', performance2X, allow_pickle=True)
-np.save(f'{data_path}/' + f'performanceX1_shuff_{monkey_names}_data.npy', performance1X_shuff, allow_pickle=True)
-np.save(f'{data_path}/' + f'performanceX2_shuff_{monkey_names}_data.npy', performance2X_shuff, allow_pickle=True)
-np.save(f'{data_path}/' + f'EVRs_{monkey_names}_data.npy', EVRs, allow_pickle=True)
-
-
-#%% [Figure 2A] plot cross temporal decoding
-
-events = [0, 1300, 2600] # if monkey A [0, 1400, 2800] # events to label on the plot
-
-for region in ('dlpfc','fef'):
-    nPCs = nPCs_region[region]
-    evrSum = np.array(EVRs[region])[:,nPCs[0]:nPCs[1]].mean(0).sum().round(3)
-    vmax = 0.6 if region == 'dlpfc' else 0.8
-    fig = plt.figure(figsize=(28, 24), dpi=100)
-    
-    for condition in conditions:
-        
-        ttypeT = 'Retarget' if condition[-1]==1 else 'Distractor'
-        ttypeT_ = 'Retarget' if condition[-1]==1 else 'Distraction'
-        tt = 1 if condition[-1]==1 else 2
-        
-        performanceT1 = performance1X[ttypeT][region]
-        performanceT1_shuff = performance1X_shuff[ttypeT][region]
-        performanceT2 = performance2X[ttypeT][region]
-        performanceT2_shuff = performance2X_shuff[ttypeT][region]
-        
-        pfm1 = np.array(performanceT1).mean(1)
-        pfm1_shuff = np.array(performanceT1_shuff).mean(1)
-        pfm2 = np.array(performanceT2).mean(1)
-        pfm2_shuff = np.array(performanceT2_shuff).mean(1)
-        
-        # calculate p values for each timebin
-        pvalues1 = np.zeros((len(tbins), len(tbins)))
-        pvalues2 = np.zeros((len(tbins), len(tbins)))
-        for t in range(len(tbins)):
-            for t_ in range(len(tbins)):
-                pvalues1[t,t_] = f_stats.permutation_pCI(pfm1[:,t,t_], pfm1_shuff[:,t,t_],tail='greater',alpha=5)
-                pvalues2[t,t_] = f_stats.permutation_pCI(pfm2[:,t,t_], pfm2_shuff[:,t,t_],tail='greater',alpha=5)
-        
-        
-        # item1
-        plt.subplot(2,2,tt)
-        ax = plt.gca()
-        sns.heatmap(pd.DataFrame(pfm1.mean(axis = 0), index=tbins,columns=tbins), cmap = 'magma', vmin = 0.25, vmax = vmax, ax = ax)
-        
-        #
-        smooth_scale = 10
-        z = ndimage.zoom(pvalues1, smooth_scale)
-        ax.contour(np.linspace(0, len(tbins), len(tbins) * smooth_scale),
-                 np.linspace(0, len(tbins), len(tbins) * smooth_scale),
-                  z, levels=([0.05]), colors='white', alpha = 1, linewidths=3)
-        
-        ax.invert_yaxis()
-        
-        
-        # event lines
-        for i in events:
-            ax.plot(tbins, np.full_like(tbins,list(tbins).index(i)), 'w-.', linewidth=4)
-            ax.plot(np.full_like(tbins,list(tbins).index(i)), tbins, 'w-.', linewidth=4)
-        
-        ax.set_xticks([list(tbins).index(i) for i in events])
-        ax.set_xticklabels(events, rotation=0, fontsize = 20)
-        ax.set_xlabel('Test Timebin (ms)', labelpad = 10, fontsize = 25)
-        ax.set_yticks([list(tbins).index(i) for i in events])
-        ax.set_yticklabels(events, fontsize = 20)
-        ax.set_ylabel('Train Timebin (ms)', labelpad = 10, fontsize = 25)
-        
-        cbar = ax.collections[0].colorbar
-        cbar.ax.tick_params(labelsize=20)
-        
-        ax.set_title(f'{ttypeT_}, Item1', fontsize = 30, pad = 20)
-        
-        
-        # item2
-        plt.subplot(2,2,tt+2)
-        ax = plt.gca()
-        sns.heatmap(pd.DataFrame(pfm2.mean(axis = 0), index=tbins,columns=tbins), cmap = 'magma', vmin = 0.25, vmax = vmax, ax = ax)#, vmax = 0.6, xticklabels = 100, yticklabels = 100, vmin = cbar_min, vmax = cbar_max
-        
-        #from scipy import ndimage
-        smooth_scale = 10
-        z = ndimage.zoom(pvalues2, smooth_scale)
-        ax.contour(np.linspace(0, len(tbins), len(tbins) * smooth_scale),
-                 np.linspace(0, len(tbins), len(tbins) * smooth_scale),
-                  z, levels=([0.05]), colors='white', alpha = 1, linewidths=3)
-        
-        ax.invert_yaxis()
-        
-        
-        # event lines
-        for i in [0, 1300, 2600]:
-            ax.plot(tbins, np.full_like(tbins,list(tbins).index(i)), 'w-.', linewidth=4)
-            ax.plot(np.full_like(tbins,list(tbins).index(i)), tbins, 'w-.', linewidth=4)
-        
-        ax.set_xticks([list(tbins).index(i) for i in [0, 1300, 2600]])
-        ax.set_xticklabels(['S1', 'S2', 'Go Cue'], rotation=0, fontsize = 20)
-        ax.set_xlabel('Test Timebin (ms)', labelpad = 10, fontsize = 25)
-        ax.set_yticks([list(tbins).index(i) for i in [0, 1300, 2600]])
-        ax.set_yticklabels(['S1', 'S2', 'Go Cue'], fontsize = 20)
-        ax.set_ylabel('Train Timebin (ms)', labelpad = 10, fontsize = 25)
-        
-        cbar = ax.collections[0].colorbar
-        cbar.ax.tick_params(labelsize=20)
-        
-        ax.set_title(f'{ttypeT_}, Item2', fontsize = 30, pad = 20)
-        
-    plt.tight_layout()
-    plt.subplots_adjust(top = 0.95)
-        
-    plt.suptitle(f'{region.upper()}, Full Space (ΣEVR={evrSum})', fontsize = 35, y=1)
-    plt.show()
-    
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+np.save(f'{data_path}/' + f'performanceX1_full_data.npy', performance1X, allow_pickle=True)
+np.save(f'{data_path}/' + f'performanceX2_full_data.npy', performance2X, allow_pickle=True)
+np.save(f'{data_path}/' + f'performanceX1_shuff_full_data.npy', performance1X_shuff, allow_pickle=True)
+np.save(f'{data_path}/' + f'performanceX2_shuff_full_data.npy', performance2X_shuff, allow_pickle=True)
+np.save(f'{data_path}/' + f'EVRs_full_data.npy', EVRs, allow_pickle=True)
 

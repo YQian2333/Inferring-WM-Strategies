@@ -16,6 +16,8 @@ warnings.simplefilter(action='ignore', category=FutureWarning)
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+from scipy import ndimage
+import seaborn as sns
 
 import f_stats
 import f_decoding
@@ -91,81 +93,237 @@ performanceX1_full_data = np.load(f'{data_path}/' + 'performanceX1_full_data.npy
 performanceX2_full_data = np.load(f'{data_path}/' + 'performanceX2_full_data.npy', allow_pickle=True).item()
 performanceX1_full_shuff_data = np.load(f'{data_path}/' + 'performanceX1_full_shuff_data.npy', allow_pickle=True).item()
 performanceX2_full_shuff_data = np.load(f'{data_path}/' + 'performanceX2_full_shuff_data.npy', allow_pickle=True).item()
+EVRs = np.load(f'{data_path}/' + f'EVRs_full_data.npy', allow_pickle=True).item()
 
 performanceX1_full_rnn = np.load(f'{data_path}/' + 'performanceX1_full_rnn.npy', allow_pickle=True).item()
 performanceX2_full_rnn = np.load(f'{data_path}/' + 'performanceX2_full_rnn.npy', allow_pickle=True).item()
 performanceX1_full_shuff_rnn = np.load(f'{data_path}/' + 'performanceX1_full_shuff_rnn.npy', allow_pickle=True).item()
 performanceX2_full_shuff_rnn = np.load(f'{data_path}/' + 'performanceX2_full_shuff_rnn.npy', allow_pickle=True).item()
 
-#%% evaluate and plot full space distractor information quantification
+#%% [Figure 2A] plot cross temporal decoding for bio data
+nPCs_region = {'dlpfc':[0,15], 'fef':[0,15]}
+conditions = (('type', 1), ('type', 2))
 
-##########################################
-# Distractor Information during Early D2 #
-##########################################
+events = [0, 1300, 2600] # if monkey A [0, 1400, 2800] # events to label on the plot
 
-ed2 = np.arange(1600,2100+bins,bins)
-ed2x = [tbins.tolist().index(t) for t in ed2]
+for region in ('dlpfc','fef'):
+    nPCs = nPCs_region[region]
+    evrSum = np.array(EVRs[region])[:,nPCs[0]:nPCs[1]].mean(0).sum().round(3)
+    vmax = 0.6 if region == 'dlpfc' else 0.8
+    
+    regionLabel = 'LPFC' if region == 'dlpfc' else 'PAC'
+    
+    fig = plt.figure(figsize=(28, 24), dpi=100)
+    
+    for condition in conditions:
+        
+        ttypeT = 'Retarget' if condition[-1]==1 else 'Distractor'
+        ttypeT_ = 'Retarget' if condition[-1]==1 else 'Distraction'
+        tt = 1 if condition[-1]==1 else 2
+        
+        performanceT1 = performanceX1_full_data[ttypeT][region]
+        performanceT1_shuff = performanceX1_full_shuff_data[ttypeT][region]
+        performanceT2 = performanceX2_full_data[ttypeT][region]
+        performanceT2_shuff = performanceX2_full_shuff_data[ttypeT][region]
+        
+        pfm1 = np.array(performanceT1).mean(1)
+        pfm1_shuff = np.array(performanceT1_shuff).mean(1)
+        pfm2 = np.array(performanceT2).mean(1)
+        pfm2_shuff = np.array(performanceT2_shuff).mean(1)
+        
+        # calculate p values for each timebin
+        pvalues1 = np.zeros((len(tbins), len(tbins)))
+        pvalues2 = np.zeros((len(tbins), len(tbins)))
+        for t in range(len(tbins)):
+            for t_ in range(len(tbins)):
+                pvalues1[t,t_] = f_stats.permutation_pCI(pfm1[:,t,t_], pfm1_shuff[:,t,t_],tail='greater',alpha=5)
+                pvalues2[t,t_] = f_stats.permutation_pCI(pfm2[:,t,t_], pfm2_shuff[:,t,t_],tail='greater',alpha=5)
+        
+        
+        # item1
+        plt.subplot(2,2,tt)
+        ax = plt.gca()
+        sns.heatmap(pd.DataFrame(pfm1.mean(axis = 0), index=tbins,columns=tbins), cmap = 'magma', vmin = 0.25, vmax = vmax, ax = ax)
+        
+        #
+        smooth_scale = 10
+        z = ndimage.zoom(pvalues1, smooth_scale)
+        ax.contour(np.linspace(0, len(tbins), len(tbins) * smooth_scale),
+                 np.linspace(0, len(tbins), len(tbins) * smooth_scale),
+                  z, levels=([0.05]), colors='white', alpha = 1, linewidths=3)
+        
+        ax.invert_yaxis()
+        
+        
+        # event lines
+        for i in events:
+            ax.plot(tbins, np.full_like(tbins,list(tbins).index(i)), 'w-.', linewidth=4)
+            ax.plot(np.full_like(tbins,list(tbins).index(i)), tbins, 'w-.', linewidth=4)
+        
+        ax.set_xticks([list(tbins).index(i) for i in events])
+        ax.set_xticklabels(events, rotation=0, fontsize = 20)
+        ax.set_xlabel('Test Timebin (ms)', labelpad = 10, fontsize = 25)
+        ax.set_yticks([list(tbins).index(i) for i in events])
+        ax.set_yticklabels(events, fontsize = 20)
+        ax.set_ylabel('Train Timebin (ms)', labelpad = 10, fontsize = 25)
+        
+        cbar = ax.collections[0].colorbar
+        cbar.ax.tick_params(labelsize=20)
+        
+        ax.set_title(f'{ttypeT_}, Item1', fontsize = 30, pad = 20)
+        
+        
+        # item2
+        plt.subplot(2,2,tt+2)
+        ax = plt.gca()
+        sns.heatmap(pd.DataFrame(pfm2.mean(axis = 0), index=tbins,columns=tbins), cmap = 'magma', vmin = 0.25, vmax = vmax, ax = ax)#, vmax = 0.6, xticklabels = 100, yticklabels = 100, vmin = cbar_min, vmax = cbar_max
+        
+        #from scipy import ndimage
+        smooth_scale = 10
+        z = ndimage.zoom(pvalues2, smooth_scale)
+        ax.contour(np.linspace(0, len(tbins), len(tbins) * smooth_scale),
+                 np.linspace(0, len(tbins), len(tbins) * smooth_scale),
+                  z, levels=([0.05]), colors='white', alpha = 1, linewidths=3)
+        
+        ax.invert_yaxis()
+        
+        
+        # event lines
+        for i in [0, 1300, 2600]:
+            ax.plot(tbins, np.full_like(tbins,list(tbins).index(i)), 'w-.', linewidth=4)
+            ax.plot(np.full_like(tbins,list(tbins).index(i)), tbins, 'w-.', linewidth=4)
+        
+        ax.set_xticks([list(tbins).index(i) for i in [0, 1300, 2600]])
+        ax.set_xticklabels(['S1', 'S2', 'Go Cue'], rotation=0, fontsize = 20)
+        ax.set_xlabel('Test Timebin (ms)', labelpad = 10, fontsize = 25)
+        ax.set_yticks([list(tbins).index(i) for i in [0, 1300, 2600]])
+        ax.set_yticklabels(['S1', 'S2', 'Go Cue'], fontsize = 20)
+        ax.set_ylabel('Train Timebin (ms)', labelpad = 10, fontsize = 25)
+        
+        cbar = ax.collections[0].colorbar
+        cbar.ax.tick_params(labelsize=20)
+        
+        ax.set_title(f'{ttypeT_}, Item2', fontsize = 30, pad = 20)
+        
+    plt.tight_layout()
+    plt.subplots_adjust(top = 0.95)
+        
+    plt.suptitle(f'{regionLabel}, Full Space (ΣEVR={evrSum})', fontsize = 35, y=1)
+    plt.show()
+    
+#%% [Figure 2A] plot item decodability full space for RNNs
 
-lineh = np.arange(0.5,1.5,0.001)
-linev = np.arange(0.71,0.72,0.0001)
+dt = 50 # The simulation timestep.
+tau = dt # time constant, here set to be the same as the timestep
+tRange = np.arange(-300,2700,dt) # simulation time
+tLength = len(tRange) # The trial length.
 
-# get diagonal decodability
-pfm22_full_rnn = {k:np.array(performanceX2_full_rnn[k][2]).mean(1).mean(1).diagonal(offset=0,axis1=1,axis2=2)[:,ed2x].mean(-1) for k in ('ed2', 'ed12')}
-pfm22_full_shuff_rnn = {k:np.array(performanceX2_full_shuff_rnn[k][2]).mean(1).mean(1).diagonal(offset=0,axis1=1,axis2=2)[:,ed2x].mean(-1) for k in ('ed2', 'ed12')}
+fitIntervals = {'R@R':((0,1300),(1600,2600),), 'R&U':((300,1300), (1600,2600),), } 
 
-pfm22_full_data = {k:np.array(performanceX2_full_data['Distractor'][k]).mean(1).diagonal(offset=0,axis1=1,axis2=2)[:,ed2x].mean(-1) for k in ('dlpfc','fef')}
-pfm22_full_shuff_data = {k:np.array(performanceX2_full_shuff_data['Distractor'][k]).mean(1).diagonal(offset=0,axis1=1,axis2=2)[:,ed2x].mean(-1) for k in ('dlpfc','fef')}
+for nfi, kfi in enumerate(fitIntervals):
+    print(kfi)
+    strategyLabel = 'Rehearse & Update' if kfi == 'R&U' else 'Retrieve at Recall'
 
-fig, axes = plt.subplots(1,1, sharey=True, figsize=(3,3), dpi=300)
-
-# full space
-ax = axes#.flatten()[0]
-
-ax.boxplot([pfm22_full_rnn['ed2']], positions=[0.3], patch_artist=True, widths = 0.2, boxprops=boxprops1, flierprops=flierprops1, 
-                  meanprops=meanpointprops1, medianprops=medianprops, capprops = capprops1, whiskerprops = whiskerprops1, meanline=False, showmeans=True)
-ax.boxplot([pfm22_full_rnn['ed12']], positions=[1.3], patch_artist=True, widths = 0.2, boxprops=boxprops2, flierprops=flierprops2, 
-                  meanprops=meanpointprops2, medianprops=medianprops, capprops = capprops2, whiskerprops = whiskerprops2, meanline=False, showmeans=True)
-ax.boxplot([pfm22_full_data['dlpfc']], positions=[2.3], patch_artist=True, widths = 0.2, boxprops=boxprops3, flierprops=flierprops3, 
-                  meanprops=meanpointprops3, medianprops=medianprops, capprops = capprops3, whiskerprops = whiskerprops3, meanline=False, showmeans=True)
-ax.boxplot([pfm22_full_data['fef']], positions=[3.3], patch_artist=True, widths = 0.2, boxprops=boxprops4, flierprops=flierprops4, 
-                  meanprops=meanpointprops4, medianprops=medianprops, capprops = capprops4, whiskerprops = whiskerprops4, meanline=False, showmeans=True)
-
-
-ax.boxplot([pfm22_full_shuff_rnn['ed2']], positions=[0.7], patch_artist=True, widths = 0.2, boxprops=boxprops0, flierprops=flierprops0, 
-                  meanprops=meanpointprops0, medianprops=medianprops, capprops = capprops0, whiskerprops = whiskerprops0, meanline=False, showmeans=True)
-ax.boxplot([pfm22_full_shuff_rnn['ed12']], positions=[1.7], patch_artist=True, widths = 0.2, boxprops=boxprops0, flierprops=flierprops0, 
-                  meanprops=meanpointprops0, medianprops=medianprops, capprops = capprops0, whiskerprops = whiskerprops0, meanline=False, showmeans=True)
-ax.boxplot([pfm22_full_shuff_data['dlpfc']], positions=[2.7], patch_artist=True, widths = 0.2, boxprops=boxprops0, flierprops=flierprops0, 
-                  meanprops=meanpointprops0, medianprops=medianprops, capprops = capprops0, whiskerprops = whiskerprops0, meanline=False, showmeans=True)
-ax.boxplot([pfm22_full_shuff_data['fef']], positions=[3.7], patch_artist=True, widths = 0.2, boxprops=boxprops0, flierprops=flierprops0, 
-                  meanprops=meanpointprops0, medianprops=medianprops, capprops = capprops0, whiskerprops = whiskerprops0, meanline=False, showmeans=True)
-
-
-p1 = f_stats.permutation_pCI(pfm22_full_rnn['ed2'], pfm22_full_shuff_rnn['ed2'], tail='greater', alpha=5)
-ax.text(0.5,0.8, f'{f_plotting.sig_marker(p1,ns_note=True)}',horizontalalignment='center', fontsize=12)
-print(f"R@R: Mean(SD) = {pfm22_full_rnn['ed2'].mean():.3f}({pfm22_full_rnn['ed2'].std():.3f}), p = {p1:.3f}")
-
-p2 = f_stats.permutation_pCI(pfm22_full_rnn['ed12'], pfm22_full_shuff_rnn['ed12'], tail='greater', alpha=5)
-ax.text(1.5,0.8, f'{f_plotting.sig_marker(p2,ns_note=True)}',horizontalalignment='center', fontsize=12)
-print(f"R&U: Mean(SD) = {pfm22_full_rnn['ed12'].mean():.3f}({pfm22_full_rnn['ed12'].std():.3f}), p = {p2:.3f}")
-
-p3 = f_stats.permutation_pCI(pfm22_full_data['dlpfc'], pfm22_full_shuff_data['dlpfc'], tail='greater', alpha=5)
-ax.text(2.5,0.8, f'{f_plotting.sig_marker(p3,ns_note=True)}',horizontalalignment='center', fontsize=12)
-print(f"LPFC: Mean(SD) = {pfm22_full_data['dlpfc'].mean():.3f}({pfm22_full_data['dlpfc'].std():.3f}), p = {p3:.3f}")
-
-p4 = f_stats.permutation_pCI(pfm22_full_data['fef'], pfm22_full_shuff_data['fef'], tail='greater', alpha=5)
-ax.text(3.5,0.8, f'{f_plotting.sig_marker(p4,ns_note=True)}',horizontalalignment='center', fontsize=12)
-print(f"FEF: Mean(SD) = {pfm22_full_data['fef'].mean():.3f}({pfm22_full_data['fef'].std():.3f}), p = {p4:.3f}")
-
-
-xlims = ax.get_xlim()
-lineThresholds = np.arange(xlims[0],xlims[1]+0.01,0.01)
-ax.set_xticks([0.5,1.5,2.5,3.5],['R@R','R&U','LPFC','FEF'], rotation=0)
-ax.set_xlabel('Strategy/Region', labelpad = 5, fontsize = 12)
-ax.set_ylabel('Decodability', labelpad = 3, fontsize = 12)
-ax.set_ylim(top=0.9, bottom=0.1)
-plt.suptitle('Distractor Information, Full Space, ED2', fontsize = 12, y=1.0)
-plt.show()
+    pfmX1 = performanceX1_full_rnn[kfi]
+    pfmX2 = performanceX2_full_rnn[kfi]
+    pfmX1_shuff = performanceX1_full_shuff_rnn[kfi]
+    pfmX2_shuff = performanceX2_full_shuff_rnn[kfi]
+    
+    bins = 50
+    tslice = (tRange.min(), tRange.max()+dt)
+    tbins = np.arange(tslice[0], tslice[1], bins) #
+    
+    if len(pfmX1[1])>0:
+        conditions = (('ttype', 1), ('ttype', 2))
+        fig = plt.figure(figsize=(28, 24), dpi=100)
+        
+        for condition in conditions:
+            
+            ttypeT = 'Retarget' if condition[-1]==1 else 'Distractor'
+            ttypeT_ = 'Retarget' if condition[-1]==1 else 'Distraction'
+            tt = 1 if condition[-1]==1 else 2
+                                
+            pfmTX1 = np.array(pfmX1[tt]).squeeze().mean(1)
+            pfmTX2 = np.array(pfmX2[tt]).squeeze().mean(1)
+            pfmTX1_shuff = np.array(pfmX1_shuff[tt]).squeeze().mean(1)
+            pfmTX2_shuff = np.array(pfmX2_shuff[tt]).squeeze().mean(1)
+            
+            # calculate permutation p values at each timebin
+            pPerms_pfm1 = np.ones((len(tbins), len(tbins)))
+            pPerms_pfm2 = np.ones((len(tbins), len(tbins)))
+            for t in range(len(tbins)):
+                for t_ in range(len(tbins)):
+                    pPerms_pfm1[t, t_] = f_stats.permutation_pCI(pfmTX1[:,t,t_], pfmTX1_shuff[:,t,t_], tail='greater', alpha=5)
+                    pPerms_pfm2[t, t_] = f_stats.permutation_pCI(pfmTX2[:,t,t_], pfmTX2_shuff[:,t,t_], tail='greater', alpha=5)
+            
+            
+            # plot decoding performance of item 1
+            vmax = 1
+            plt.subplot(2,2,tt)
+            ax = plt.gca()
+            sns.heatmap(pd.DataFrame(pfmTX1.mean(0), index=tbins,columns=tbins), cmap = 'magma', vmin = 0.0, vmax = vmax, ax = ax)#, vmax = 0.6, xticklabels = 100, yticklabels = 100, vmin = cbar_min, vmax = cbar_max
+            
+            # outline significant timebins
+            smooth_scale = 10
+            z = ndimage.zoom(pPerms_pfm1, smooth_scale)
+            ax.contour(np.linspace(0, len(tbins), len(tbins) * smooth_scale),
+                    np.linspace(0, len(tbins), len(tbins) * smooth_scale),
+                    z, levels=([0.05]), colors='white', alpha = 1, linewidths = 3)
+            
+            ax.invert_yaxis()
+            
+            # adjust labels
+            for i in [0, 1300, 2600]:
+                ax.plot(tbins, np.full_like(tbins,list(tbins).index(i)), 'w-.', linewidth=4)
+                ax.plot(np.full_like(tbins,list(tbins).index(i)), tbins, 'w-.', linewidth=4)
+            
+            ax.set_xticks([list(tbins).index(i) for i in [0, 1300, 2600]])
+            ax.set_xticklabels(['S1','S2','Go Cue'], rotation=0, fontsize = 20)
+            ax.set_xlabel('Test Timebin (ms)', labelpad = 10, fontsize = 25)
+            ax.set_yticks([list(tbins).index(i) for i in [0, 1300, 2600]])
+            ax.set_yticklabels(['S1','S2','Go Cue'], fontsize = 20)
+            ax.set_ylabel('Train Timebin (ms)', labelpad = 10, fontsize = 25)
+            
+            cbar = ax.collections[0].colorbar
+            cbar.ax.tick_params(labelsize=20)
+            ax.set_title(f'{ttypeT_}, Item1', fontsize = 30, pad = 20)
+            
+            
+            # plot decoding performance of item 2
+            plt.subplot(2,2,tt+2)
+            ax = plt.gca()
+            sns.heatmap(pd.DataFrame(pfmTX2.mean(0), index=tbins,columns=tbins), cmap = 'magma', vmin = 0.0, vmax = vmax, ax = ax)#, vmax = 0.6, xticklabels = 100, yticklabels = 100, vmin = cbar_min, vmax = cbar_max
+            
+            # outline significant timebins
+            smooth_scale = 10
+            z = ndimage.zoom(pPerms_pfm2, smooth_scale)
+            ax.contour(np.linspace(0, len(tbins), len(tbins) * smooth_scale),
+                    np.linspace(0, len(tbins), len(tbins) * smooth_scale),
+                    z, levels=([0.05]), colors='white', alpha = 1, linewidths = 3)
+            
+            ax.invert_yaxis()
+            
+            # adjust labels
+            for i in [0, 1300, 2600]:
+                ax.plot(tbins, np.full_like(tbins,list(tbins).index(i)), 'w-.', linewidth=4)
+                ax.plot(np.full_like(tbins,list(tbins).index(i)), tbins, 'w-.', linewidth=4)
+            
+            ax.set_xticks([list(tbins).index(i) for i in [0, 1300, 2600]])
+            ax.set_xticklabels(['S1','S2','Go Cue'], rotation=0, fontsize = 20)
+            ax.set_xlabel('Test Timebin (ms)', labelpad = 10, fontsize = 25)
+            ax.set_yticks([list(tbins).index(i) for i in [0, 1300, 2600]])
+            ax.set_yticklabels(['S1','S2','Go Cue'], fontsize = 20)
+            ax.set_ylabel('Train Timebin (ms)', labelpad = 10, fontsize = 25)
+            
+            cbar = ax.collections[0].colorbar
+            cbar.ax.tick_params(labelsize=20)
+            ax.set_title(f'{ttypeT_}, Item2', fontsize = 30, pad = 20)
+            
+        plt.tight_layout()
+        plt.subplots_adjust(top = 0.95)
+        plt.suptitle(f'{strategyLabel}, Full Space', fontsize = 35, y=1) #, Arti_Noise = {arti_noise_level}
+        plt.show()
+        
 
 #%% [Figure 2B] evaluate and plot full space code stability
 
@@ -439,6 +597,75 @@ print(f"LPFC: M(SD) = {codeMorph_full_data['dlpfc'].mean():.3f}({codeMorph_full_
 print(f"FEF: M(SD) = {codeMorph_full_data['fef'].mean():.3f}({codeMorph_full_data['fef'].std():.3f}), p = {p4:.3f};")
 print('\n')
 
+#%% evaluate and plot full space distractor information quantification
+
+##########################################
+# Distractor Information during Early D2 #
+##########################################
+
+ed2 = np.arange(1600,2100+bins,bins)
+ed2x = [tbins.tolist().index(t) for t in ed2]
+
+lineh = np.arange(0.5,1.5,0.001)
+linev = np.arange(0.71,0.72,0.0001)
+
+# get diagonal decodability
+pfm22_full_rnn = {k:np.array(performanceX2_full_rnn[k][2]).mean(1).mean(1).diagonal(offset=0,axis1=1,axis2=2)[:,ed2x].mean(-1) for k in ('ed2', 'ed12')}
+pfm22_full_shuff_rnn = {k:np.array(performanceX2_full_shuff_rnn[k][2]).mean(1).mean(1).diagonal(offset=0,axis1=1,axis2=2)[:,ed2x].mean(-1) for k in ('ed2', 'ed12')}
+
+pfm22_full_data = {k:np.array(performanceX2_full_data['Distractor'][k]).mean(1).diagonal(offset=0,axis1=1,axis2=2)[:,ed2x].mean(-1) for k in ('dlpfc','fef')}
+pfm22_full_shuff_data = {k:np.array(performanceX2_full_shuff_data['Distractor'][k]).mean(1).diagonal(offset=0,axis1=1,axis2=2)[:,ed2x].mean(-1) for k in ('dlpfc','fef')}
+
+fig, axes = plt.subplots(1,1, sharey=True, figsize=(3,3), dpi=300)
+
+# full space
+ax = axes#.flatten()[0]
+
+ax.boxplot([pfm22_full_rnn['ed2']], positions=[0.3], patch_artist=True, widths = 0.2, boxprops=boxprops1, flierprops=flierprops1, 
+                  meanprops=meanpointprops1, medianprops=medianprops, capprops = capprops1, whiskerprops = whiskerprops1, meanline=False, showmeans=True)
+ax.boxplot([pfm22_full_rnn['ed12']], positions=[1.3], patch_artist=True, widths = 0.2, boxprops=boxprops2, flierprops=flierprops2, 
+                  meanprops=meanpointprops2, medianprops=medianprops, capprops = capprops2, whiskerprops = whiskerprops2, meanline=False, showmeans=True)
+ax.boxplot([pfm22_full_data['dlpfc']], positions=[2.3], patch_artist=True, widths = 0.2, boxprops=boxprops3, flierprops=flierprops3, 
+                  meanprops=meanpointprops3, medianprops=medianprops, capprops = capprops3, whiskerprops = whiskerprops3, meanline=False, showmeans=True)
+ax.boxplot([pfm22_full_data['fef']], positions=[3.3], patch_artist=True, widths = 0.2, boxprops=boxprops4, flierprops=flierprops4, 
+                  meanprops=meanpointprops4, medianprops=medianprops, capprops = capprops4, whiskerprops = whiskerprops4, meanline=False, showmeans=True)
+
+
+ax.boxplot([pfm22_full_shuff_rnn['ed2']], positions=[0.7], patch_artist=True, widths = 0.2, boxprops=boxprops0, flierprops=flierprops0, 
+                  meanprops=meanpointprops0, medianprops=medianprops, capprops = capprops0, whiskerprops = whiskerprops0, meanline=False, showmeans=True)
+ax.boxplot([pfm22_full_shuff_rnn['ed12']], positions=[1.7], patch_artist=True, widths = 0.2, boxprops=boxprops0, flierprops=flierprops0, 
+                  meanprops=meanpointprops0, medianprops=medianprops, capprops = capprops0, whiskerprops = whiskerprops0, meanline=False, showmeans=True)
+ax.boxplot([pfm22_full_shuff_data['dlpfc']], positions=[2.7], patch_artist=True, widths = 0.2, boxprops=boxprops0, flierprops=flierprops0, 
+                  meanprops=meanpointprops0, medianprops=medianprops, capprops = capprops0, whiskerprops = whiskerprops0, meanline=False, showmeans=True)
+ax.boxplot([pfm22_full_shuff_data['fef']], positions=[3.7], patch_artist=True, widths = 0.2, boxprops=boxprops0, flierprops=flierprops0, 
+                  meanprops=meanpointprops0, medianprops=medianprops, capprops = capprops0, whiskerprops = whiskerprops0, meanline=False, showmeans=True)
+
+
+p1 = f_stats.permutation_pCI(pfm22_full_rnn['ed2'], pfm22_full_shuff_rnn['ed2'], tail='greater', alpha=5)
+ax.text(0.5,0.8, f'{f_plotting.sig_marker(p1,ns_note=True)}',horizontalalignment='center', fontsize=12)
+print(f"R@R: Mean(SD) = {pfm22_full_rnn['ed2'].mean():.3f}({pfm22_full_rnn['ed2'].std():.3f}), p = {p1:.3f}")
+
+p2 = f_stats.permutation_pCI(pfm22_full_rnn['ed12'], pfm22_full_shuff_rnn['ed12'], tail='greater', alpha=5)
+ax.text(1.5,0.8, f'{f_plotting.sig_marker(p2,ns_note=True)}',horizontalalignment='center', fontsize=12)
+print(f"R&U: Mean(SD) = {pfm22_full_rnn['ed12'].mean():.3f}({pfm22_full_rnn['ed12'].std():.3f}), p = {p2:.3f}")
+
+p3 = f_stats.permutation_pCI(pfm22_full_data['dlpfc'], pfm22_full_shuff_data['dlpfc'], tail='greater', alpha=5)
+ax.text(2.5,0.8, f'{f_plotting.sig_marker(p3,ns_note=True)}',horizontalalignment='center', fontsize=12)
+print(f"LPFC: Mean(SD) = {pfm22_full_data['dlpfc'].mean():.3f}({pfm22_full_data['dlpfc'].std():.3f}), p = {p3:.3f}")
+
+p4 = f_stats.permutation_pCI(pfm22_full_data['fef'], pfm22_full_shuff_data['fef'], tail='greater', alpha=5)
+ax.text(3.5,0.8, f'{f_plotting.sig_marker(p4,ns_note=True)}',horizontalalignment='center', fontsize=12)
+print(f"FEF: Mean(SD) = {pfm22_full_data['fef'].mean():.3f}({pfm22_full_data['fef'].std():.3f}), p = {p4:.3f}")
+
+
+xlims = ax.get_xlim()
+lineThresholds = np.arange(xlims[0],xlims[1]+0.01,0.01)
+ax.set_xticks([0.5,1.5,2.5,3.5],['R@R','R&U','LPFC','FEF'], rotation=0)
+ax.set_xlabel('Strategy/Region', labelpad = 5, fontsize = 12)
+ax.set_ylabel('Decodability', labelpad = 3, fontsize = 12)
+ax.set_ylim(top=0.9, bottom=0.1)
+plt.suptitle('Distractor Information, Full Space, ED2', fontsize = 12, y=1.0)
+plt.show()
 
 #%%
 
@@ -461,71 +688,218 @@ performanceX2_readout_rnn = np.load(f'{data_path}/' + 'performanceX2_readout_rnn
 performanceX1_readout_shuff_rnn = np.load(f'{data_path}/' + 'performanceX1_readout_shuff_rnn.npy', allow_pickle=True).item()
 performanceX2_readout_shuff_rnn = np.load(f'{data_path}/' + 'performanceX2_readout_shuff_rnn.npy', allow_pickle=True).item()
 
-#%% evaluate and plot readout subspace distractor information quantification
+#%% [Figure S4A] plot readout decodability for bio data
+for region in ('dlpfc','fef'):
 
-###################
-# distractor info #
-###################
+    infoLabel = 'Accuracy'
+    fig = plt.figure(figsize=(28, 24), dpi=100)
+    
+    for tt in ttypes:
+        
+        condT = 'Retarget' if tt == 1 else 'Distraction'
+        h0 = 1/len(locs)
+        
+        pfm1, pfm2 = performanceX1_readout_data[region][tt].mean(1), performanceX2_readout_data[region][tt].mean(1)
+        pfm1_shuff, pfm2_shuff = performanceX1_readout_shuff_data[region][tt].mean(1), performanceX2_readout_shuff_data[region][tt].mean(1)
 
-ed2 = np.arange(1600,2100+bins,bins)
-ed2x = [tbins.tolist().index(t) for t in ed2]
+        pPerms_decode1_3d = np.ones((len(tbins), len(tbins)))
+        pPerms_decode2_3d = np.ones((len(tbins), len(tbins)))
+        
+        for t in range(len(tbins)):
+            for t_ in range(len(tbins)):
+                #pPerms_decode1_3d[t, t_] = f_stats.permutation_p(pfm1.mean(0)[t,t_], pfm1_shuff.mean(1)[:,t,t_], tail='greater')
+                #pPerms_decode2_3d[t, t_] = f_stats.permutation_p(pfm2.mean(0)[t,t_], pfm2_shuff.mean(1)[:,t,t_], tail='greater')
+                pPerms_decode1_3d[t, t_] = f_stats.permutation_pCI(pfm1[:,t,t_], pfm1_shuff[:,t,t_], tail='greater', alpha=5)
+                pPerms_decode2_3d[t, t_] = f_stats.permutation_pCI(pfm2[:,t,t_], pfm2_shuff[:,t,t_], tail='greater', alpha=5)
+                
+        
+        vmax = 0.6 if region == 'dlpfc' else 0.8
+        regionLabel = 'LPFC' if region == 'dlpfc' else 'PAC'
+        
+        # item1
+        plt.subplot(2,2,tt)
+        ax = plt.gca()
+        sns.heatmap(pd.DataFrame(pfm1.mean(0), index=tbins,columns=tbins), cmap = 'magma', vmin = 0.25, vmax = vmax, ax = ax)#, vmax = 0.6, xticklabels = 100, yticklabels = 100, vmin = cbar_min, vmax = cbar_max
+        
+        #from scipy import ndimage
+        smooth_scale = 10
+        z = ndimage.zoom(pPerms_decode1_3d, smooth_scale)
+        ax.contour(np.linspace(0, len(tbins), len(tbins) * smooth_scale),
+                 np.linspace(0, len(tbins), len(tbins) * smooth_scale),
+                  z, levels=([0.05]), colors='white', alpha = 1, linewidths=3)
+        
+        ax.invert_yaxis()
+        
+        
+        # event lines
+        for i in [0, 1300, 2600]:
+            ax.plot(tbins, np.full_like(tbins,list(tbins).index(i)), 'w-.', linewidth=4)
+            ax.plot(np.full_like(tbins,list(tbins).index(i)), tbins, 'w-.', linewidth=4)
+        
+        ax.set_xticks([list(tbins).index(i) for i in [0, 1300, 2600]])
+        ax.set_xticklabels(['S1', 'S2', 'Go Cue'], rotation=0, fontsize = 20)
+        ax.set_xlabel('Test Timebin (ms)', labelpad = 10, fontsize = 25)
+        ax.set_yticks([list(tbins).index(i) for i in [0, 1300, 2600]])
+        ax.set_yticklabels(['S1', 'S2', 'Go Cue'], fontsize = 20, rotation=90)
+        ax.set_ylabel('Train Timebin (ms)', labelpad = 10, fontsize = 25)
+        
+        cbar = ax.collections[0].colorbar
+        # here set the labelsize by 20
+        cbar.ax.tick_params(labelsize=20)
+        
+        ax.set_title(f'{condT}, Item1', fontsize = 30, pad = 20)
+        
+        # item2
+        plt.subplot(2,2,tt+2)
+        ax = plt.gca()
+        sns.heatmap(pd.DataFrame(pfm2.mean(0), index=tbins,columns=tbins), cmap = 'magma', vmin = 0.25, vmax = vmax, ax = ax)#, vmax = 0.6, xticklabels = 100, yticklabels = 100, vmin = cbar_min, vmax = cbar_max
+        
+        #from scipy import ndimage
+        smooth_scale = 10
+        z = ndimage.zoom(pPerms_decode2_3d, smooth_scale)
+        ax.contour(np.linspace(0, len(tbins), len(tbins) * smooth_scale),
+                 np.linspace(0, len(tbins), len(tbins) * smooth_scale),
+                  z, levels=([0.05]), colors='white', alpha = 1, linewidths=3)
+        
+        ax.invert_yaxis()
+        
+        
+        # event lines
+        for i in [0, 1300, 2600]:
+            ax.plot(tbins, np.full_like(tbins,list(tbins).index(i)), 'w-.', linewidth=4)
+            ax.plot(np.full_like(tbins,list(tbins).index(i)), tbins, 'w-.', linewidth=4)
+        
+        ax.set_xticks([list(tbins).index(i) for i in [0, 1300, 2600]])
+        ax.set_xticklabels(['S1', 'S2', 'Go Cue'], rotation=0, fontsize = 20)
+        ax.set_xlabel('Test Timebin (ms)', labelpad = 10, fontsize = 25)
+        ax.set_yticks([list(tbins).index(i) for i in [0, 1300, 2600]])
+        ax.set_yticklabels(['S1', 'S2', 'Go Cue'], fontsize = 20, rotation=90)
+        ax.set_ylabel('Train Timebin (ms)', labelpad = 10, fontsize = 25)
+        
+        cbar = ax.collections[0].colorbar
+        # here set the labelsize by 20
+        cbar.ax.tick_params(labelsize=20)
+        
+        ax.set_title(f'{condT}, Item2', fontsize = 30, pad = 20)
+    
+    plt.tight_layout()
+    plt.subplots_adjust(top = 0.95)
+    plt.suptitle(f'{regionLabel}, Readout Subspace', fontsize = 35, y=1) #, Arti_Noise = {arti_noise_level}
+    plt.show()
+    
+#%% [Figure S4A] plot readout decodability for RNNs
+for nfi, kfi in enumerate(fitIntervals):
+    print(kfi)
+    info_C1X,info_C2X = performanceX1_readout_rnn[kfi], performanceX2_readout_rnn[kfi] 
+    info_C1X_shuff,info_C2X_shuff = performanceX1_readout_shuff_rnn[kfi], performanceX2_readout_shuff_rnn[kfi] 
 
-# get diagonal decodability
-pfm22_readout_rnn = {k:np.array([performanceX2_readout_rnn[k][n][2] for n in range(100)]).mean(1).mean(1).diagonal(offset=0,axis1=1,axis2=2)[:,ed2x].mean(-1) for k in ('ed2', 'ed12')}
-pfm22_readout_shuff_rnn = {k:np.array([performanceX2_readout_shuff_rnn[k][n][2] for n in range(100)]).mean(1).mean(1).diagonal(offset=0,axis1=1,axis2=2)[:,ed2x].mean(-1) for k in ('ed2', 'ed12')}
 
-pfm22_readout_data = {k:np.array(performanceX2_readout_data[k][2]).mean(1).diagonal(offset=0,axis1=1,axis2=2)[:,ed2x].mean(-1) for k in ('dlpfc','fef')}
-pfm22_readout_shuff_data = {k:np.array(performanceX2_readout_shuff_data[k][2]).mean(1).diagonal(offset=0,axis1=1,axis2=2)[:,ed2x].mean(-1) for k in ('dlpfc','fef')}
+    label = f'fit interval:{kfi}'
+    strategyLabel = 'Rehearse & Update' if kfi == 'R&U' else 'Retrieve at Recall'
+        
+            
+    ########################################
+    # plot info on choice plane cross temp #
+    ########################################
+    decode_projC1X_3d = {1:np.array([info_C1X[i][1].mean(0).mean(0) for i in range(len(info_C1X))]),
+                         2:np.array([info_C1X[j][2].mean(0).mean(0) for j in range(len(info_C1X))])}
+    decode_projC2X_3d = {1:np.array([info_C2X[i][1].mean(0).mean(0) for i in range(len(info_C2X))]),
+                         2:np.array([info_C2X[j][2].mean(0).mean(0) for j in range(len(info_C2X))])}
+    
+    decode_projC1X_3d_shuff = {1:np.array([info_C1X_shuff[i][1].mean(0).mean(0) for i in range(len(info_C1X_shuff))]),
+                         2:np.array([info_C1X_shuff[j][2].mean(0).mean(0) for j in range(len(info_C1X_shuff))])}
+    decode_projC2X_3d_shuff = {1:np.array([info_C2X_shuff[i][1].mean(0).mean(0) for i in range(len(info_C2X_shuff))]),
+                         2:np.array([info_C2X_shuff[j][2].mean(0).mean(0) for j in range(len(info_C2X_shuff))])}
+    
 
-fig, axes = plt.subplots(1,1, sharey=True, figsize=(3,3), dpi=300)
-
-# readout subspace
-ax = axes#.flatten()[0]
-
-ax.boxplot([pfm22_readout_rnn['ed2']], positions=[0.3], patch_artist=True, widths = 0.2, boxprops=boxprops1, flierprops=flierprops1, 
-                  meanprops=meanpointprops1, medianprops=medianprops, capprops = capprops1, whiskerprops = whiskerprops1, meanline=False, showmeans=True)
-ax.boxplot([pfm22_readout_rnn['ed12']], positions=[1.3], patch_artist=True, widths = 0.2, boxprops=boxprops2, flierprops=flierprops2, 
-                  meanprops=meanpointprops2, medianprops=medianprops, capprops = capprops2, whiskerprops = whiskerprops2, meanline=False, showmeans=True)
-ax.boxplot([pfm22_readout_data['dlpfc']], positions=[2.3], patch_artist=True, widths = 0.2, boxprops=boxprops3, flierprops=flierprops3, 
-                  meanprops=meanpointprops3, medianprops=medianprops, capprops = capprops3, whiskerprops = whiskerprops3, meanline=False, showmeans=True)
-ax.boxplot([pfm22_readout_data['fef']], positions=[3.3], patch_artist=True, widths = 0.2, boxprops=boxprops4, flierprops=flierprops4, 
-                  meanprops=meanpointprops4, medianprops=medianprops, capprops = capprops4, whiskerprops = whiskerprops4, meanline=False, showmeans=True)
-
-ax.boxplot([pfm22_readout_shuff_rnn['ed2']], positions=[0.7], patch_artist=True, widths = 0.2, boxprops=boxprops0, flierprops=flierprops0, 
-                  meanprops=meanpointprops0, medianprops=medianprops, capprops = capprops0, whiskerprops = whiskerprops0, meanline=False, showmeans=True)
-ax.boxplot([pfm22_readout_shuff_rnn['ed12']], positions=[1.7], patch_artist=True, widths = 0.2, boxprops=boxprops0, flierprops=flierprops0, 
-                  meanprops=meanpointprops0, medianprops=medianprops, capprops = capprops0, whiskerprops = whiskerprops0, meanline=False, showmeans=True)
-ax.boxplot([pfm22_readout_shuff_data['dlpfc']], positions=[2.7], patch_artist=True, widths = 0.2, boxprops=boxprops0, flierprops=flierprops0, 
-                  meanprops=meanpointprops0, medianprops=medianprops, capprops = capprops0, whiskerprops = whiskerprops0, meanline=False, showmeans=True)
-ax.boxplot([pfm22_readout_shuff_data['fef']], positions=[3.7], patch_artist=True, widths = 0.2, boxprops=boxprops0, flierprops=flierprops0, 
-                  meanprops=meanpointprops0, medianprops=medianprops, capprops = capprops0, whiskerprops = whiskerprops0, meanline=False, showmeans=True)
-
-
-p1 = f_stats.permutation_pCI(pfm22_readout_rnn['ed2'], pfm22_readout_shuff_rnn['ed2'], tail='greater', alpha=5)
-ax.text(0.5,0.8, f'{f_plotting.sig_marker(p1,ns_note=True)}',horizontalalignment='center', fontsize=12)
-print(f"R@R: Mean(SD) = {pfm22_readout_rnn['ed2'].mean():.3f}({pfm22_readout_rnn['ed2'].std():.3f}), p = {p1:.3f};")
-
-p2 = f_stats.permutation_pCI(pfm22_readout_rnn['ed12'], pfm22_readout_shuff_rnn['ed12'], tail='greater', alpha=5)
-ax.text(1.5,0.8, f'{f_plotting.sig_marker(p2,ns_note=True)}',horizontalalignment='center', fontsize=12)
-print(f"R&U: Mean(SD) = {pfm22_readout_rnn['ed12'].mean():.3f}({pfm22_readout_rnn['ed12'].std():.3f}), p = {p2:.3f};")
-
-p3 = f_stats.permutation_pCI(pfm22_readout_data['dlpfc'], pfm22_readout_shuff_data['dlpfc'], tail='greater', alpha=5)
-ax.text(2.5,0.8, f'{f_plotting.sig_marker(p3,ns_note=True)}',horizontalalignment='center', fontsize=12)
-print(f"LPFC: Mean(SD) = {pfm22_readout_data['dlpfc'].mean():.3f}({pfm22_readout_data['dlpfc'].std():.3f}), p = {p3:.3f};")
-
-p4 = f_stats.permutation_pCI(pfm22_readout_data['fef'], pfm22_readout_shuff_data['fef'], tail='greater', alpha=5)
-ax.text(3.5,0.8, f'{f_plotting.sig_marker(p4,ns_note=True)}',horizontalalignment='center', fontsize=12)
-print(f"FEF: Mean(SD) = {pfm22_readout_data['fef'].mean():.3f}({pfm22_readout_data['fef'].std():.3f}), p = {p4:.3f};")
-
-
-xlims = ax.get_xlim()
-lineThresholds = np.arange(xlims[0],xlims[1]+0.01,0.01)
-ax.set_xticks([0.5,1.5,2.5,3.5],['R@R','R&U','LPFC','FEF'], rotation=0)
-ax.set_xlabel('Strategy/Region', labelpad = 5, fontsize = 12)
-ax.set_ylabel('Decodability', labelpad = 3, fontsize = 12)
-ax.set_ylim(top=0.9, bottom=0.1)
-plt.suptitle('Distractor Information, Readout Subspace, ED2', fontsize = 12, y=1.0)
-plt.show()
+    infoLabel = 'Accuracy'
+    
+    if len(decode_projC1X_3d[1])>0:
+        fig = plt.figure(figsize=(28, 24), dpi=100)
+        
+        for tt in ttypes:
+            
+            condT = 'Retarget' if tt == 1 else 'Distraction'
+            h0 = 1/len(locs)
+            
+            pfm1, pfm2 = decode_projC1X_3d[tt], decode_projC2X_3d[tt]
+            
+            pPerms_decode1_3d = np.ones((len(tbins), len(tbins)))
+            pPerms_decode2_3d = np.ones((len(tbins), len(tbins)))
+            
+            for t in range(len(tbins)):
+                for t_ in range(len(tbins)):
+                    pPerms_decode1_3d[t, t_] = f_stats.permutation_pCI(decode_projC1X_3d[tt][:,t,t_], decode_projC1X_3d_shuff[tt][:,t,t_], alpha=5, tail='greater')
+                    pPerms_decode2_3d[t, t_] = f_stats.permutation_pCI(decode_projC2X_3d[tt][:,t,t_], decode_projC2X_3d_shuff[tt][:,t,t_], alpha=5, tail='greater')
+                    
+            
+            
+            # item1
+            plt.subplot(2,2,tt)
+            ax = plt.gca()
+            sns.heatmap(pd.DataFrame(pfm1.mean(0), index=tbins,columns=tbins), cmap = 'magma', vmin = 0.0, vmax = 1, ax = ax)
+            smooth_scale = 10
+            z = ndimage.zoom(pPerms_decode1_3d, smooth_scale)
+            ax.contour(np.linspace(0, len(tbins), len(tbins) * smooth_scale),
+                    np.linspace(0, len(tbins), len(tbins) * smooth_scale),
+                    z, levels=([0.01]), colors='white', alpha = 1, linewidths = 3)
+            
+            ax.invert_yaxis()
+            
+            
+            # event lines
+            for i in [0, 1300, 2600]:
+                ax.plot(tbins, np.full_like(tbins,list(tbins).index(i)), 'w-.', linewidth=4)
+                ax.plot(np.full_like(tbins,list(tbins).index(i)), tbins, 'w-.', linewidth=4)
+            
+            ax.set_xticks([list(tbins).index(i) for i in [0, 1300, 2600]])
+            ax.set_xticklabels(['S1','S2','Go Cue'], rotation=0, fontsize = 20)
+            ax.set_xlabel('Test Timebin (ms)', labelpad = 10, fontsize = 25)
+            ax.set_yticks([list(tbins).index(i) for i in [0, 1300, 2600]])
+            ax.set_yticklabels(['S1','S2','Go Cue'], fontsize = 20)
+            ax.set_ylabel('Train Timebin (ms)', labelpad = 10, fontsize = 25)
+            
+            cbar = ax.collections[0].colorbar
+            # here set the labelsize by 20
+            cbar.ax.tick_params(labelsize=20)
+            
+            ax.set_title(f'{condT}, Item1', fontsize = 30, pad = 20)
+            
+            # item2
+            plt.subplot(2,2,tt+2)
+            ax = plt.gca()
+            sns.heatmap(pd.DataFrame(pfm2.mean(0), index=tbins,columns=tbins), cmap = 'magma', vmin = 0.0, vmax = 1, ax = ax)
+            smooth_scale = 10
+            z = ndimage.zoom(pPerms_decode2_3d, smooth_scale)
+            ax.contour(np.linspace(0, len(tbins), len(tbins) * smooth_scale),
+                    np.linspace(0, len(tbins), len(tbins) * smooth_scale),
+                    z, levels=([0.01]), colors='white', alpha = 1, linewidths = 3)
+            
+            ax.invert_yaxis()
+            
+            
+            # event lines
+            for i in [0, 1300, 2600]:
+                ax.plot(tbins, np.full_like(tbins,list(tbins).index(i)), 'w-.', linewidth=4)
+                ax.plot(np.full_like(tbins,list(tbins).index(i)), tbins, 'w-.', linewidth=4)
+            
+            ax.set_xticks([list(tbins).index(i) for i in [0, 1300, 2600]])
+            ax.set_xticklabels(['S1','S2','Go Cue'], rotation=0, fontsize = 20)
+            ax.set_xlabel('Test Timebin (ms)', labelpad = 10, fontsize = 25)
+            ax.set_yticks([list(tbins).index(i) for i in [0, 1300, 2600]])
+            ax.set_yticklabels(['S1','S2','Go Cue'], fontsize = 20)
+            ax.set_ylabel('Train Timebin (ms)', labelpad = 10, fontsize = 25)
+            
+            cbar = ax.collections[0].colorbar
+            # here set the labelsize by 20
+            cbar.ax.tick_params(labelsize=20)
+            
+            ax.set_title(f'{condT}, Item2', fontsize = 30, pad = 20)
+        
+        plt.tight_layout()
+        plt.subplots_adjust(top = 0.95)
+        plt.suptitle(f'{strategyLabel}, Readout Subspace', fontsize = 35, y=1) #, Arti_Noise = {arti_noise_level}
+        plt.show()
 #%% [Figure S4B] evaluate and plot readout subspace code stability
 
 ##################
@@ -787,3 +1161,69 @@ print(f"R&U: M(SD) = {codeMorph_readout_rnn['ed12'].mean():.3f}({codeMorph_reado
 print(f"LPFC: M(SD) = {codeMorph_readout_data['dlpfc'].mean():.3f}({codeMorph_readout_data['dlpfc'].std():.3f}), p = {p3:.3f};")
 print(f"FEF: M(SD) = {codeMorph_readout_data['fef'].mean():.3f}({codeMorph_readout_data['fef'].std():.3f}), p = {p4:.3f};")
 print('\n')
+
+#%% evaluate and plot readout subspace distractor information quantification
+
+###################
+# distractor info #
+###################
+
+ed2 = np.arange(1600,2100+bins,bins)
+ed2x = [tbins.tolist().index(t) for t in ed2]
+
+# get diagonal decodability
+pfm22_readout_rnn = {k:np.array([performanceX2_readout_rnn[k][n][2] for n in range(100)]).mean(1).mean(1).diagonal(offset=0,axis1=1,axis2=2)[:,ed2x].mean(-1) for k in ('ed2', 'ed12')}
+pfm22_readout_shuff_rnn = {k:np.array([performanceX2_readout_shuff_rnn[k][n][2] for n in range(100)]).mean(1).mean(1).diagonal(offset=0,axis1=1,axis2=2)[:,ed2x].mean(-1) for k in ('ed2', 'ed12')}
+
+pfm22_readout_data = {k:np.array(performanceX2_readout_data[k][2]).mean(1).diagonal(offset=0,axis1=1,axis2=2)[:,ed2x].mean(-1) for k in ('dlpfc','fef')}
+pfm22_readout_shuff_data = {k:np.array(performanceX2_readout_shuff_data[k][2]).mean(1).diagonal(offset=0,axis1=1,axis2=2)[:,ed2x].mean(-1) for k in ('dlpfc','fef')}
+
+fig, axes = plt.subplots(1,1, sharey=True, figsize=(3,3), dpi=300)
+
+# readout subspace
+ax = axes#.flatten()[0]
+
+ax.boxplot([pfm22_readout_rnn['ed2']], positions=[0.3], patch_artist=True, widths = 0.2, boxprops=boxprops1, flierprops=flierprops1, 
+                  meanprops=meanpointprops1, medianprops=medianprops, capprops = capprops1, whiskerprops = whiskerprops1, meanline=False, showmeans=True)
+ax.boxplot([pfm22_readout_rnn['ed12']], positions=[1.3], patch_artist=True, widths = 0.2, boxprops=boxprops2, flierprops=flierprops2, 
+                  meanprops=meanpointprops2, medianprops=medianprops, capprops = capprops2, whiskerprops = whiskerprops2, meanline=False, showmeans=True)
+ax.boxplot([pfm22_readout_data['dlpfc']], positions=[2.3], patch_artist=True, widths = 0.2, boxprops=boxprops3, flierprops=flierprops3, 
+                  meanprops=meanpointprops3, medianprops=medianprops, capprops = capprops3, whiskerprops = whiskerprops3, meanline=False, showmeans=True)
+ax.boxplot([pfm22_readout_data['fef']], positions=[3.3], patch_artist=True, widths = 0.2, boxprops=boxprops4, flierprops=flierprops4, 
+                  meanprops=meanpointprops4, medianprops=medianprops, capprops = capprops4, whiskerprops = whiskerprops4, meanline=False, showmeans=True)
+
+ax.boxplot([pfm22_readout_shuff_rnn['ed2']], positions=[0.7], patch_artist=True, widths = 0.2, boxprops=boxprops0, flierprops=flierprops0, 
+                  meanprops=meanpointprops0, medianprops=medianprops, capprops = capprops0, whiskerprops = whiskerprops0, meanline=False, showmeans=True)
+ax.boxplot([pfm22_readout_shuff_rnn['ed12']], positions=[1.7], patch_artist=True, widths = 0.2, boxprops=boxprops0, flierprops=flierprops0, 
+                  meanprops=meanpointprops0, medianprops=medianprops, capprops = capprops0, whiskerprops = whiskerprops0, meanline=False, showmeans=True)
+ax.boxplot([pfm22_readout_shuff_data['dlpfc']], positions=[2.7], patch_artist=True, widths = 0.2, boxprops=boxprops0, flierprops=flierprops0, 
+                  meanprops=meanpointprops0, medianprops=medianprops, capprops = capprops0, whiskerprops = whiskerprops0, meanline=False, showmeans=True)
+ax.boxplot([pfm22_readout_shuff_data['fef']], positions=[3.7], patch_artist=True, widths = 0.2, boxprops=boxprops0, flierprops=flierprops0, 
+                  meanprops=meanpointprops0, medianprops=medianprops, capprops = capprops0, whiskerprops = whiskerprops0, meanline=False, showmeans=True)
+
+
+p1 = f_stats.permutation_pCI(pfm22_readout_rnn['ed2'], pfm22_readout_shuff_rnn['ed2'], tail='greater', alpha=5)
+ax.text(0.5,0.8, f'{f_plotting.sig_marker(p1,ns_note=True)}',horizontalalignment='center', fontsize=12)
+print(f"R@R: Mean(SD) = {pfm22_readout_rnn['ed2'].mean():.3f}({pfm22_readout_rnn['ed2'].std():.3f}), p = {p1:.3f};")
+
+p2 = f_stats.permutation_pCI(pfm22_readout_rnn['ed12'], pfm22_readout_shuff_rnn['ed12'], tail='greater', alpha=5)
+ax.text(1.5,0.8, f'{f_plotting.sig_marker(p2,ns_note=True)}',horizontalalignment='center', fontsize=12)
+print(f"R&U: Mean(SD) = {pfm22_readout_rnn['ed12'].mean():.3f}({pfm22_readout_rnn['ed12'].std():.3f}), p = {p2:.3f};")
+
+p3 = f_stats.permutation_pCI(pfm22_readout_data['dlpfc'], pfm22_readout_shuff_data['dlpfc'], tail='greater', alpha=5)
+ax.text(2.5,0.8, f'{f_plotting.sig_marker(p3,ns_note=True)}',horizontalalignment='center', fontsize=12)
+print(f"LPFC: Mean(SD) = {pfm22_readout_data['dlpfc'].mean():.3f}({pfm22_readout_data['dlpfc'].std():.3f}), p = {p3:.3f};")
+
+p4 = f_stats.permutation_pCI(pfm22_readout_data['fef'], pfm22_readout_shuff_data['fef'], tail='greater', alpha=5)
+ax.text(3.5,0.8, f'{f_plotting.sig_marker(p4,ns_note=True)}',horizontalalignment='center', fontsize=12)
+print(f"FEF: Mean(SD) = {pfm22_readout_data['fef'].mean():.3f}({pfm22_readout_data['fef'].std():.3f}), p = {p4:.3f};")
+
+
+xlims = ax.get_xlim()
+lineThresholds = np.arange(xlims[0],xlims[1]+0.01,0.01)
+ax.set_xticks([0.5,1.5,2.5,3.5],['R@R','R&U','LPFC','FEF'], rotation=0)
+ax.set_xlabel('Strategy/Region', labelpad = 5, fontsize = 12)
+ax.set_ylabel('Decodability', labelpad = 3, fontsize = 12)
+ax.set_ylim(top=0.9, bottom=0.1)
+plt.suptitle('Distractor Information, Readout Subspace, ED2', fontsize = 12, y=1.0)
+plt.show()
