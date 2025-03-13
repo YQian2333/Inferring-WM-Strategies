@@ -28,7 +28,7 @@ To create pseudo-populations used for biological data analyses, download dataset
 ## Training RNNs
 To train RNNs with different strategies, refer to:
 - [`rnns_training.py`](rnns_training.py)
-Approximate time to train 1 RNN (with the default parameters): 5 mins
+- Approximate time to train 1 RNN (with the default parameters): 5 mins
 
 ## Replicating Results
 ### Figure 2 and Figure S4
