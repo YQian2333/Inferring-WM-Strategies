@@ -9,43 +9,32 @@ Created on Thu Mar 28 14:23:51 2024
 %reload_ext autoreload
 %autoreload 2
 
-#%% import modules
 import numpy as np
-import scipy
 from scipy import ndimage
 import pandas as pd
 
-# basic plot functions
-import matplotlib as mpl
 import matplotlib.pyplot as plt
 import re, seaborn as sns
-import matplotlib.colors as mcolors
 
 import warnings
 warnings.simplefilter(action='ignore', category=FutureWarning) # turn off warning messages
 
-# system paths
-import os
 import gc
-import time # timer
-from itertools import permutations, combinations, product # itertools
+from itertools import permutations
 
-#%% import pyTorch
 import torch
 import torch.nn as nn
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu') # if available, use GPU
 
-#%% import custom functions
+# import custom functions
 import myRNNs
 import f_simulation
 import f_trainRNN
 import f_evaluateRNN
-import f_subspace
 import f_stats
-import f_decoding
-import f_plotting
-
 #%% task parameters
+data_path = 'D:/data' # change to your own data path
+
 locs = [0,1,2,3] # location conditions
 ttypes = [1,2] # ttype conditions
 locCombs = list(permutations(locs,2))
@@ -62,7 +51,7 @@ accFracs = (1, 0, 0) # fraction of correct, random incorrect (non-displayed-irre
 trialInfo = f_simulation.generate_trials_balance(N_trials, locs, ttypes, accFracs) # generate trials with balanced number per condition
 N_trials = len(trialInfo) # recalculate N_trials based on generated trials
 
-# In[]
+#%%
 
 ###############
 # 8ch version #
@@ -111,7 +100,7 @@ Y0_Bonds = (-300,0)
 Y0 = f_simulation.generate_Y(N_out, trialInfo.choice.values, Y0_Bonds[0], Y0_Bonds[1], dt, expected0)
 Y0_ = torch.tensor(Y0, dtype=torch.float32).to(device)
 
-#%% fitting windows for different strategies
+#%% define fitting windows for different strategies
 fitIntervals = {'R@R':((0,1300),(1600,2600),), 'R&U':((300,1300), (1600,2600),), } 
 
 #%%
@@ -120,12 +109,12 @@ fitIntervals = {'R@R':((0,1300),(1600,2600),), 'R&U':((300,1300), (1600,2600),),
 # train RNNs #
 ##############
 
-# In[] train RNNs
+#%% train RNNs
 nModels = 100 #number of models to be trained per strategy
 withBsl = True if tRange.min() <0 else False # include baseline to fitting or not
 
 expectedFull = 1 # expected correct output at the target time
-# In[]
+
 modelDicts = {} # save trained models
 
 for nfi, kfi in enumerate(fitIntervals):
@@ -187,6 +176,10 @@ for nfi, kfi in enumerate(fitIntervals):
         
         gc.collect()
 
+#%% save trained models
+np.save(f'{data_path}/modelDicts.npy', modelDicts, allow_pickle=True)
+
+
 #%%
 
 #################
@@ -203,7 +196,7 @@ bins = 50 # downsampling bins, same as simulation timestep, so doesn't really af
 tslice = (tRange.min(),tRange.max()+dt)
 tbins = np.arange(tslice[0], tslice[1], bins)
 
-#%% model performance, plot states
+#%% [Figure 1C, 1D, 1E] model performance, plot states
 
 plot_samples = (0,1,2) # show example RNNs only
 accuracies_rnns = {} # store RNN accuracies
@@ -231,7 +224,7 @@ for nfi, kfi in enumerate(fitIntervals):
             if (ii in plot_samples):
                 f_evaluateRNN.plot_states(modelD, test_Info, test_X, tRange, trialEvents, dt=dt, locs = (0,1,2,3), ttypes = (1,2), 
                                           lcX = np.arange(0,1,1), cues=False, cseq = None, label = strategyLabel, 
-                                          withhidden=False, withannote=False, save_path=save_path, savefig=False)
+                                          withhidden=False, withannote=False, save_path=data_path, savefig=False)
                             
             ii+=1
         
@@ -316,7 +309,16 @@ for nfi, kfi in enumerate(fitIntervals):
     performancesXtt[kfi] = pfmsXtt
     performancesXtt_shuff[kfi] = pfmsXtt_shuff
 
-#%% plot item decodability full space
+#%% save computed decodability
+np.save(f'{data_path}/' + 'performanceX1_full_rnn.npy', performancesX1, allow_pickle=True)
+np.save(f'{data_path}/' + 'performanceX2_full_rnn.npy', performancesX2, allow_pickle=True)
+np.save(f'{data_path}/' + 'performanceX1_full_shuff_rnn.npy', performancesX1_shuff, allow_pickle=True)
+np.save(f'{data_path}/' + 'performanceX2_full_shuff_rnn.npy', performancesX2_shuff, allow_pickle=True)
+
+np.save(f'{data_path}/' + 'performanceXtt_full_rnn.npy', performancesXtt, allow_pickle=True)
+np.save(f'{data_path}/' + 'performanceXtt_full_shuff_rnn.npy', performancesXtt_shuff, allow_pickle=True)
+
+#%% [Figure 2A] plot item decodability full space
 for nfi, kfi in enumerate(fitIntervals):
     print(kfi)
     strategyLabel = 'Rehearse & Update' if kfi == 'R&U' else 'Retrieve at Recall'
@@ -492,7 +494,7 @@ for nfi, kfi in enumerate(fitIntervals):
 ##########################
 
 
-# In[] calculate geoms
+#%% initialize parameters and dictionaries
 checkpoints = [150, 550, 1050, 1450, 1850, 2350]#
 checkpointsLabels = ['S1','ED1','LD1','S2','ED2','LD2'] #, 2800
 avgInterval = {150:150, 550:250, 1050:250, 1450:150, 1850:250, 2350:250} #, 2800:200
@@ -500,7 +502,6 @@ nPerms = 100
 nBoots = 100
 infoMethod='lda'
 
-#%%
 # items v item
 cosThetas_11, cosThetas_22, cosThetas_12 = {},{},{}
 cosPsis_11, cosPsis_22, cosPsis_12 = {},{},{}
@@ -532,12 +533,15 @@ performanceX_rdnc_shuff, performanceX_drnc_shuff = {},{}
 info3ds_1, info3ds_2 = {},{}
 info3ds_1_shuff, info3ds_2_shuff = {},{}
 
+# cross-temporal decodability of items by readout subspace projections
+infos_C1X, infos_C2X = {},{}
+infos_C1X_shuff, infos_C2X_shuff = {},{}
+
 # EVRs of top3 PCs
 EVRs_C1 = {}
 EVRs_C2 = {}
 
-#%%
-# calculate geoms
+#%% [Figure 4A] calculate geoms & plot with example RNNs
 for nfi, kfi in enumerate(fitIntervals):
     print(kfi)
     
@@ -548,7 +552,7 @@ for nfi, kfi in enumerate(fitIntervals):
     
     vecs_C, projs_C, projsAll_C, trialInfos_C, data_3pc_C, pcas_C, evrs_C, evrs2nd_C, vecs_C_shuff, projs_C_shuff, projsAll_C_shuff, trialInfos_C_shuff, data_3pc_C_shuff, _ = f_evaluateRNN.generate_choiceVectors(models_dict, trialInfo, X_, Y0_, tRange, nBoots=nBoots, nPerms=nPerms, pca_tWins=((300,1300),(1600,2600),), 
                                                                                                                                                                                                     dt=dt, toPlot = True, label=f'{strategyLabel}',plot3d=False,
-                                                                                                                                                                                                    hideLocs = (0,2), savefig=False, save_path = f'{phd_path}/outputs/rnns/', normalizeMinMax=(-1,1), separatePlot=False) #
+                                                                                                                                                                                                    hideLocs = (0,2), savefig=False, save_path = f'{data_path}/', normalizeMinMax=(-1,1), separatePlot=False) #
     EVRs_C1[kfi] = evrs_C
     EVRs_C2[kfi] = evrs2nd_C
     
@@ -588,6 +592,10 @@ for nfi, kfi in enumerate(fitIntervals):
     info3ds_1[kfi], info3ds_2[kfi] = [],[]
     info3ds_1_shuff[kfi], info3ds_2_shuff[kfi] = [],[]
     
+    # cross-temporal item info by readout subspace projection
+    infos_C1X[kfi], infos_C2X[kfi] = [],[]
+    infos_C1X_shuff[kfi], infos_C2X_shuff[kfi] = [],[]
+    
     for i in range(len(modelDicts[kfi])):
         print(i)
 
@@ -616,6 +624,9 @@ for nfi, kfi in enumerate(fitIntervals):
         
         # item info by item subspace projections        
         info3d, info3d_shuff = f_evaluateRNN.itemInfo_by_plane(geoms_valid, checkpoints, nPerms = nPerms, infoMethod=infoMethod, shuff_excludeInv = False)
+        
+        # cross-temporal item info by readout subspace projection
+        info_CIX, info_CIX_shuff = f_evaluateRNN.itemInfo_by_planeCX(geomsC_valid, nPerms = nPerms, bins = bins, tslice = tslice, shuff_excludeInv = False)
         
         # store results for choice item
         cosThetas_choice[kfi] += [cosThetas_C[0]]
@@ -674,9 +685,188 @@ for nfi, kfi in enumerate(fitIntervals):
         info3ds_2[kfi] += [info3d[1]]
         info3ds_1_shuff[kfi] += [info3d_shuff[0]]
         info3ds_2_shuff[kfi] += [info3d_shuff[1]]
+        
+        # store results for cross-temporal item info by readout subspace
+        infos_C1X[kfi] += [info_CIX[0]]
+        infos_C2X[kfi] += [info_CIX[1]]
+        infos_C1X_shuff[kfi] += [info_CIX_shuff[0]]
+        infos_C2X_shuff[kfi] += [info_CIX_shuff[1]]
+        
+
+#%% save computed geometry results
+
+np.save(f'{data_path}/' + 'cosTheta_choice_rnn.npy', cosThetas_choice, allow_pickle=True)
+np.save(f'{data_path}/' + 'cosPsi_choice_rnn.npy', cosPsis_choice, allow_pickle=True)
+np.save(f'{data_path}/' + 'cosTheta_nonchoice_rnn.npy', cosThetas_nonchoice, allow_pickle=True)
+np.save(f'{data_path}/' + 'cosPsi_nonchoice_rnn.npy', cosPsis_nonchoice, allow_pickle=True)
+
+np.save(f'{data_path}/' + 'cosTheta_choice_shuff_rnn.npy', cosThetas_choice_shuff, allow_pickle=True)
+np.save(f'{data_path}/' + 'cosPsi_choice_shuff_rnn.npy', cosPsis_choice_shuff, allow_pickle=True)
+np.save(f'{data_path}/' + 'cosTheta_nonchoice_shuff_rnn.npy', cosThetas_nonchoice_shuff, allow_pickle=True)
+np.save(f'{data_path}/' + 'cosPsi_nonchoice_shuff_rnn.npy', cosPsis_nonchoice_shuff, allow_pickle=True)
+
+np.save(f'{data_path}/' + 'cosTheta_11_rnn.npy', cosThetas_11, allow_pickle=True)
+np.save(f'{data_path}/' + 'cosTheta_22_rnn.npy', cosThetas_22, allow_pickle=True)
+np.save(f'{data_path}/' + 'cosTheta_12_rnn.npy', cosThetas_12, allow_pickle=True)
+np.save(f'{data_path}/' + 'cosPsi_11_rnn.npy', cosPsis_11, allow_pickle=True)
+np.save(f'{data_path}/' + 'cosPsi_22_rnn.npy', cosPsis_22, allow_pickle=True)
+np.save(f'{data_path}/' + 'cosPsi_12_rnn.npy', cosPsis_12, allow_pickle=True)
+
+np.save(f'{data_path}/' + 'cosTheta_11_shuff_rnn.npy', cosThetas_11_shuff, allow_pickle=True)
+np.save(f'{data_path}/' + 'cosTheta_22_shuff_rnn.npy', cosThetas_22_shuff, allow_pickle=True)
+np.save(f'{data_path}/' + 'cosTheta_12_shuff_rnn.npy', cosThetas_12_shuff, allow_pickle=True)
+np.save(f'{data_path}/' + 'cosPsi_11_shuff_rnn.npy', cosPsis_11_shuff, allow_pickle=True)
+np.save(f'{data_path}/' + 'cosPsi_22_shuff_rnn.npy', cosPsis_22_shuff, allow_pickle=True)
+np.save(f'{data_path}/' + 'cosPsi_12_shuff_rnn.npy', cosPsis_12_shuff, allow_pickle=True)
+
+np.save(f'{data_path}/' + 'cosTheta_11_bsl_rnn.npy', cosThetas_11_bsl, allow_pickle=True)
+np.save(f'{data_path}/' + 'cosTheta_22_bsl_rnn.npy', cosThetas_22_bsl, allow_pickle=True)
+np.save(f'{data_path}/' + 'cosTheta_12_bsl_rnn.npy', cosThetas_12_bsl, allow_pickle=True)
+np.save(f'{data_path}/' + 'cosPsi_11_bsl_rnn.npy', cosPsis_11_bsl, allow_pickle=True)
+np.save(f'{data_path}/' + 'cosPsi_22_bsl_rnn.npy', cosPsis_22_bsl, allow_pickle=True)
+np.save(f'{data_path}/' + 'cosPsi_12_bsl_rnn.npy', cosPsis_12_bsl, allow_pickle=True)
+
+np.save(f'{data_path}/' + 'performanceX_12_rnn.npy', performanceX_12, allow_pickle=True)
+np.save(f'{data_path}/' + 'performanceX_12_shuff_rnn.npy', performanceX_12_shuff, allow_pickle=True)
+np.save(f'{data_path}/' + 'performanceX_21_rnn.npy', performanceX_21, allow_pickle=True)
+np.save(f'{data_path}/' + 'performanceX_21_shuff_rnn.npy', performanceX_21_shuff, allow_pickle=True)
+
+np.save(f'{data_path}/' + 'performanceX_rdc_rnn.npy', performanceX_rdc, allow_pickle=True)
+np.save(f'{data_path}/' + 'performanceX_rdc_shuff_rnn.npy', performanceX_rdc_shuff, allow_pickle=True)
+np.save(f'{data_path}/' + 'performanceX_drc_rnn.npy', performanceX_drc, allow_pickle=True)
+np.save(f'{data_path}/' + 'performanceX_drc_shuff_rnn.npy', performanceX_drc_shuff, allow_pickle=True)
+
+np.save(f'{data_path}/' + 'performanceX_rdnc_rnn.npy', performanceX_rdnc, allow_pickle=True)
+np.save(f'{data_path}/' + 'performanceX_rdnc_shuff_rnn.npy', performanceX_rdnc_shuff, allow_pickle=True)
+np.save(f'{data_path}/' + 'performanceX_drnc_rnn.npy', performanceX_drnc, allow_pickle=True)
+np.save(f'{data_path}/' + 'performanceX_drnc_shuff_rnn.npy', performanceX_drnc_shuff, allow_pickle=True)
+
+np.save(f'{data_path}/' + 'performance1_item_rnn.npy', info3ds_1, allow_pickle=True)
+np.save(f'{data_path}/' + 'performance2_item_rnn.npy', info3ds_2, allow_pickle=True)
+np.save(f'{data_path}/' + 'performance1_item_shuff_rnn.npy', info3ds_1_shuff, allow_pickle=True)
+np.save(f'{data_path}/' + 'performance2_item_shuff_rnn.npy', info3ds_2_shuff, allow_pickle=True)
+
+np.save(f'{data_path}/' + 'performanceX1_readout_rnn.npy', infos_C1X, allow_pickle=True)
+np.save(f'{data_path}/' + 'performanceX2_readout_rnn.npy', infos_C2X, allow_pickle=True)
+np.save(f'{data_path}/' + 'performanceX1_readout_shuff_rnn.npy', infos_C1X_shuff, allow_pickle=True)
+np.save(f'{data_path}/' + 'performanceX2_readout_shuff_rnn.npy', infos_C2X_shuff, allow_pickle=True)
+
+#%% [Figure S4A] plot readout decodability
+for nfi, kfi in enumerate(fitIntervals):
+    print(kfi)
+    info3d_1,info3d_2 = info3ds_1[kfi], info3ds_2[kfi]
+    info_C1X,info_C2X = infos_C1X[kfi], infos_C2X[kfi] 
+
+    info3d_1_shuff,info3d_2_shuff = info3ds_1_shuff[kfi], info3ds_2_shuff[kfi]
+    info_C1X_shuff,info_C2X_shuff = infos_C1X_shuff[kfi], infos_C2X_shuff[kfi] 
+
+
+    label = f'fit interval:{kfi}'
+    strategyLabel = 'Rehearse & Update' if kfi == 'R&U' else 'Retrieve at Recall'
+        
+            
+    ########################################
+    # plot info on choice plane cross temp #
+    ########################################
+    decode_projC1X_3d = {1:np.array([info_C1X[i][1].mean(0).mean(0) for i in range(len(info_C1X))]),
+                         2:np.array([info_C1X[j][2].mean(0).mean(0) for j in range(len(info_C1X))])}
+    decode_projC2X_3d = {1:np.array([info_C2X[i][1].mean(0).mean(0) for i in range(len(info_C2X))]),
+                         2:np.array([info_C2X[j][2].mean(0).mean(0) for j in range(len(info_C2X))])}
+    
+    decode_projC1X_3d_shuff = {1:np.array([info_C1X_shuff[i][1].mean(0).mean(0) for i in range(len(info_C1X_shuff))]),
+                         2:np.array([info_C1X_shuff[j][2].mean(0).mean(0) for j in range(len(info_C1X_shuff))])}
+    decode_projC2X_3d_shuff = {1:np.array([info_C2X_shuff[i][1].mean(0).mean(0) for i in range(len(info_C2X_shuff))]),
+                         2:np.array([info_C2X_shuff[j][2].mean(0).mean(0) for j in range(len(info_C2X_shuff))])}
     
 
-
+    infoLabel = 'Accuracy' if infoMethod=='lda' else 'PEV'
+    
+    if len(decode_projC1X_3d[1])>0:
+        fig = plt.figure(figsize=(28, 24), dpi=100)
+        
+        for tt in ttypes:
+            
+            condT = 'Retarget' if tt == 1 else 'Distraction'
+            h0 = 0 if infoMethod == 'omega2' else 1/len(locs)
+            
+            pfm1, pfm2 = decode_projC1X_3d[tt], decode_projC2X_3d[tt]
+            
+            pPerms_decode1_3d = np.ones((len(tbins), len(tbins)))
+            pPerms_decode2_3d = np.ones((len(tbins), len(tbins)))
+            
+            for t in range(len(tbins)):
+                for t_ in range(len(tbins)):
+                    pPerms_decode1_3d[t, t_] = f_stats.permutation_pCI(decode_projC1X_3d[tt][:,t,t_], decode_projC1X_3d_shuff[tt][:,t,t_], alpha=5, tail='greater')
+                    pPerms_decode2_3d[t, t_] = f_stats.permutation_pCI(decode_projC2X_3d[tt][:,t,t_], decode_projC2X_3d_shuff[tt][:,t,t_], alpha=5, tail='greater')
+                    
+            
+            
+            # item1
+            plt.subplot(2,2,tt)
+            ax = plt.gca()
+            sns.heatmap(pd.DataFrame(pfm1.mean(0), index=tbins,columns=tbins), cmap = 'magma', vmin = 0.0, vmax = 1, ax = ax)
+            smooth_scale = 10
+            z = ndimage.zoom(pPerms_decode1_3d, smooth_scale)
+            ax.contour(np.linspace(0, len(tbins), len(tbins) * smooth_scale),
+                    np.linspace(0, len(tbins), len(tbins) * smooth_scale),
+                    z, levels=([0.01]), colors='white', alpha = 1, linewidths = 3)
+            
+            ax.invert_yaxis()
+            
+            
+            # event lines
+            for i in [0, 1300, 2600]:
+                ax.plot(tbins, np.full_like(tbins,list(tbins).index(i)), 'w-.', linewidth=4)
+                ax.plot(np.full_like(tbins,list(tbins).index(i)), tbins, 'w-.', linewidth=4)
+            
+            ax.set_xticks([list(tbins).index(i) for i in [0, 1300, 2600]])
+            ax.set_xticklabels(['S1','S2','Go Cue'], rotation=0, fontsize = 20)
+            ax.set_xlabel('Test Timebin (ms)', labelpad = 10, fontsize = 25)
+            ax.set_yticks([list(tbins).index(i) for i in [0, 1300, 2600]])
+            ax.set_yticklabels(['S1','S2','Go Cue'], fontsize = 20)
+            ax.set_ylabel('Train Timebin (ms)', labelpad = 10, fontsize = 25)
+            
+            cbar = ax.collections[0].colorbar
+            # here set the labelsize by 20
+            cbar.ax.tick_params(labelsize=20)
+            
+            ax.set_title(f'{condT}, Item1', fontsize = 30, pad = 20)
+            
+            # item2
+            plt.subplot(2,2,tt+2)
+            ax = plt.gca()
+            sns.heatmap(pd.DataFrame(pfm2.mean(0), index=tbins,columns=tbins), cmap = 'magma', vmin = 0.0, vmax = 1, ax = ax)
+            smooth_scale = 10
+            z = ndimage.zoom(pPerms_decode2_3d, smooth_scale)
+            ax.contour(np.linspace(0, len(tbins), len(tbins) * smooth_scale),
+                    np.linspace(0, len(tbins), len(tbins) * smooth_scale),
+                    z, levels=([0.01]), colors='white', alpha = 1, linewidths = 3)
+            
+            ax.invert_yaxis()
+            
+            
+            # event lines
+            for i in [0, 1300, 2600]:
+                ax.plot(tbins, np.full_like(tbins,list(tbins).index(i)), 'w-.', linewidth=4)
+                ax.plot(np.full_like(tbins,list(tbins).index(i)), tbins, 'w-.', linewidth=4)
+            
+            ax.set_xticks([list(tbins).index(i) for i in [0, 1300, 2600]])
+            ax.set_xticklabels(['S1','S2','Go Cue'], rotation=0, fontsize = 20)
+            ax.set_xlabel('Test Timebin (ms)', labelpad = 10, fontsize = 25)
+            ax.set_yticks([list(tbins).index(i) for i in [0, 1300, 2600]])
+            ax.set_yticklabels(['S1','S2','Go Cue'], fontsize = 20)
+            ax.set_ylabel('Train Timebin (ms)', labelpad = 10, fontsize = 25)
+            
+            cbar = ax.collections[0].colorbar
+            # here set the labelsize by 20
+            cbar.ax.tick_params(labelsize=20)
+            
+            ax.set_title(f'{condT}, Item2', fontsize = 30, pad = 20)
+        
+        plt.tight_layout()
+        plt.subplots_adjust(top = 0.95)
+        plt.suptitle(f'{strategyLabel}, Readout Subspace', fontsize = 35, y=1) #, Arti_Noise = {arti_noise_level}
+        plt.show()
 #%%
 
 ######################################
@@ -684,6 +874,8 @@ for nfi, kfi in enumerate(fitIntervals):
 ######################################
 
 #%% calculate euclidean distance between centroids on readout subspace
+hideLocs=(0,2)
+
 nPerms = 100
 nBoots = 100
 
@@ -717,19 +909,21 @@ for nfi, kfi in enumerate(fitIntervals):
         
         for nbt in range(nBoots):
             geomsC_valid = (vecs_C[i][nbt], projs_C[i][nbt], projsAll_C[i][nbt], trialInfos_C[i][nbt], data_3pc_C[i][nbt])
-            euDist_centroids2T = f_evaluateRNN.get_euDist_centroids2(geomsC_valid, locs = locs, ttypes = ttypes, bins = bins, dt = dt, tslice = tslice, end_D1s = end_D1s, end_D2s = end_D2s, zscore = False, normalizeMinMax=(-1,1), hideLocs=(0,2))
+            euDist_centroids2T = f_evaluateRNN.get_euDist_centroids2(geomsC_valid, locs = locs, ttypes = ttypes, bins = bins, dt = dt, tslice = tslice, end_D1s = end_D1s, end_D2s = end_D2s, zscore = False, normalizeMinMax=(-1,1), hideLocs=hideLocs)
             
             for tt in ttypes:
                 euDists_centroids2[kfi][tt][i] += [euDist_centroids2T[tt]]
         
         # genereate label-shuffled baseline distribution
         for npm in range(nPerms): 
-            euDist_centroids2T_shuff = f_evaluateRNN.get_euDist_centroids2(geomsC_valid, locs = locs, ttypes = ttypes, bins = bins, dt = dt, tslice = tslice, end_D1s = end_D1s, end_D2s = end_D2s, zscore = False, normalizeMinMax=(-1,1), hideLocs=(0,2), shuffleBsl=True)
+            euDist_centroids2T_shuff = f_evaluateRNN.get_euDist_centroids2(geomsC_valid, locs = locs, ttypes = ttypes, bins = bins, dt = dt, tslice = tslice, end_D1s = end_D1s, end_D2s = end_D2s, zscore = False, normalizeMinMax=(-1,1), hideLocs=hideLocs, shuffleBsl=True)
         
             for tt in ttypes:
                 euDists_centroids2_shuff[kfi][tt][i] += [euDist_centroids2T_shuff[tt]]
 
-
+#%% save computed drift distances
+np.save(f'{data_path}/' + 'euDists_rnns_centroids2_normalized.npy', euDists_centroids2, allow_pickle=True)
+np.save(f'{data_path}/' + 'euDists_rnns_centroids2_shuff_normalized.npy', euDists_centroids2_shuff, allow_pickle=True)
 
 
 

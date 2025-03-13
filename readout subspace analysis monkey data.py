@@ -68,7 +68,7 @@ epsilon = 1e-7
 ########## readout subspace analysis ##########
 ###############################################    
     
-#%% calculate readout subspace vectors
+#%% [Figure 4A] calculate readout subspace vectors & plot with example pseudoPop 
 
 vecs_C = {}
 projs_C = {}
@@ -641,6 +641,6 @@ for region in ('dlpfc','fef'):
             euDists_shuff[region][tt] += [euDistT_shuff[tt]]
             
     
-#%%
-np.save(f'{data_path}/euDists_monkeys_centroids2_normalized_hide02.npy', euDists, allow_pickle=True)
-np.save(f'{data_path}/euDists_shuff_monkeys_centroids2_normalized_hide02.npy', euDists_shuff, allow_pickle=True)
+#%% save
+np.save(f'{data_path}/euDists_monkeys_centroids2_normalized.npy', euDists, allow_pickle=True)
+np.save(f'{data_path}/euDists_shuff_monkeys_centroids2_normalized.npy', euDists_shuff, allow_pickle=True)

@@ -167,7 +167,7 @@ ax.set_ylim(top=0.9, bottom=0.1)
 plt.suptitle('Distractor Information, Full Space, ED2', fontsize = 12, y=1.0)
 plt.show()
 
-#%% evaluate and plot full space code stability
+#%% [Figure 2B] evaluate and plot full space code stability
 
 ##################
 # code stability #
@@ -330,7 +330,7 @@ print(f"R&U, D1-D2: MD = {(stabRatioD1_full_rnn['ed12'].mean()-stabRatioD2_full_
 print(f"LPFC, D1-D2: MD = {(stabRatioD1_full_data['dlpfc'].mean()-stabRatioD2_full_data['dlpfc'].mean()):.3f}, p = {p56:.3f}, g = {f_stats.hedges_g(stabRatioD1_full_data['dlpfc'],stabRatioD2_full_data['dlpfc']):.3f};")
 print(f"FEF, D1-D2: MD = {(stabRatioD1_full_data['fef'].mean()-stabRatioD2_full_data['fef'].mean()):.3f}, p = {p78:.3f}, g = {f_stats.hedges_g(stabRatioD1_full_data['fef'],stabRatioD2_full_data['fef']):.3f};")
 
-#%% evaluate and plot full space code morphing
+#%% [Figure 2C] evaluate and plot full space code morphing
 
 #################
 # code morphing #
@@ -526,7 +526,7 @@ ax.set_ylabel('Decodability', labelpad = 3, fontsize = 12)
 ax.set_ylim(top=0.9, bottom=0.1)
 plt.suptitle('Distractor Information, Readout Subspace, ED2', fontsize = 12, y=1.0)
 plt.show()
-#%% evaluate and plot readout subspace code stability
+#%% [Figure S4B] evaluate and plot readout subspace code stability
 
 ##################
 # code stability #
@@ -684,7 +684,7 @@ print(f"R&U, D1-D2: MD = {(stabRatioD1_readout_rnn['ed12'].mean()-stabRatioD2_re
 print(f"LPFC, D1-D2: MD = {(stabRatioD1_readout_data['dlpfc'].mean()-stabRatioD2_readout_data['dlpfc'].mean()):.3f}, p = {p56:.3f}, g = {f_stats.hedges_g(stabRatioD1_readout_data['dlpfc'],stabRatioD2_readout_data['dlpfc']):.3f};")
 print(f"FEF, D1-D2: MD = {(stabRatioD1_readout_data['fef'].mean()-stabRatioD2_readout_data['fef'].mean()):.3f}, p = {p78:.3f}, g = {f_stats.hedges_g(stabRatioD1_readout_data['fef'],stabRatioD2_readout_data['fef']):.3f};")
 
-#%% evaluate and plot readout subspace code morphing
+#%% [Figure S4C] evaluate and plot readout subspace code morphing
 
 #################
 # code morphing #

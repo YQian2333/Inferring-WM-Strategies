@@ -27,8 +27,8 @@ import f_stats
 import f_decoding
 
 #%% set load and save paths
-data_path = 'E:/NUS/PhD/data' # change to your own data path
-save_path = 'E:/NUS/PhD/data/pseudo_ww' # change to your own save path
+data_path = 'D:/data' # change to your own data path
+pseudoPop_path = 'D:/data/pseudoPop' # change to your own save path
 dt = 10 # sampling rate
 monkey_names = 'all' # pooled pseudo population from both monkeys
 
@@ -41,21 +41,21 @@ locs = (0,1,2,3,)
 locCombs = list(permutations(locs,2))
 ttypes = (1,2,)
 subConditions = list(product(locCombs, ttypes))
-# In[] decodability with/without permutation P value
+#%% decodability with/without permutation P value
 bins = 50 # smoothed bins
 tslice = (-300,2700)
 tsliceRange = np.arange(-300,2700,dt)
 slice_epochsDic = {'bsl':[-300,0],'s1':[0,300],'d1':[300,1300],'s2':[1300,1600],'d2':[1600,2600],'go':[2600,3000]} # used for pooled pseudo pop or monkey B individually
 #slice_epochsDic = {'bsl':[-300,0],'s1':[0,400],'d1':[400,1400],'s2':[1400,1800],'d2':[1800,2800],'go':[2600,3000]} # used for monkey A individually
 
-# In[]
+#%%
 
 ###########################################
 ######### cross-temporal decoding #########
 ###########################################
 
     
-# In[]
+#%% initialize variables and decoding params
 nIters = 100
 nBoots = 100
 nPerms = nBoots
@@ -68,7 +68,7 @@ nPCs_region = {'dlpfc':[0,15], 'fef':[0,15]}
 
 conditions = (('type', 1), ('type', 2))
 EVRs = {'dlpfc':[],'fef':[]}
-#%% initialize variables
+
 performance1X = {'Retarget':{'dlpfc':[],'fef':[]}, 'Distractor':{'dlpfc':[],'fef':[]}}
 performance1X_shuff = {'Retarget':{'dlpfc':[],'fef':[]}, 'Distractor':{'dlpfc':[],'fef':[]}}
 performance2X = {'Retarget':{'dlpfc':[],'fef':[]}, 'Distractor':{'dlpfc':[],'fef':[]}}
@@ -79,7 +79,6 @@ performance1W_shuff = {'Retarget':{'dlpfc':[],'fef':[]}, 'Distractor':{'dlpfc':[
 performance2W = {'Retarget':{'dlpfc':[],'fef':[]}, 'Distractor':{'dlpfc':[],'fef':[]}}
 performance2W_shuff = {'Retarget':{'dlpfc':[],'fef':[]}, 'Distractor':{'dlpfc':[],'fef':[]}}
 
-#%% initialize decoding params
 toDecode_labels1 = 'loc1'
 toDecode_labels2 = 'loc2'
 Y_columnsLabels = ['locKey','locs','type','loc1','loc2','locX']
@@ -92,7 +91,7 @@ for n in range(nIters):
     print(f'Iter = {n}')
     
     # load pseudo populations
-    pseudo_data = np.load(save_path + f'/pseudo_{monkey_names}{n}.npy', allow_pickle=True).item()
+    pseudo_data = np.load(pseudoPop_path + f'/pseudo_{monkey_names}{n}.npy', allow_pickle=True).item()
     pseudo_region = pseudo_data['pseudo_region']
     pseudo_TrialInfo = pseudo_data['pseudo_TrialInfo']
     
@@ -285,20 +284,14 @@ for n in range(nIters):
 
 
 #%% save full space decodability and EVRs
-np.save(f'{save_path}/' + f'performanceX1_{monkey_names}_data.npy', performance1X, allow_pickle=True)
-np.save(f'{save_path}/' + f'performanceX2_{monkey_names}_data.npy', performance2X, allow_pickle=True)
-np.save(f'{save_path}/' + f'performanceX1_shuff_{monkey_names}_data.npy', performance1X_shuff, allow_pickle=True)
-np.save(f'{save_path}/' + f'performanceX2_shuff_{monkey_names}_data.npy', performance2X_shuff, allow_pickle=True)
-np.save(f'{save_path}/' + f'EVRs_{monkey_names}_data.npy', EVRs, allow_pickle=True)
+np.save(f'{data_path}/' + f'performanceX1_{monkey_names}_data.npy', performance1X, allow_pickle=True)
+np.save(f'{data_path}/' + f'performanceX2_{monkey_names}_data.npy', performance2X, allow_pickle=True)
+np.save(f'{data_path}/' + f'performanceX1_shuff_{monkey_names}_data.npy', performance1X_shuff, allow_pickle=True)
+np.save(f'{data_path}/' + f'performanceX2_shuff_{monkey_names}_data.npy', performance2X_shuff, allow_pickle=True)
+np.save(f'{data_path}/' + f'EVRs_{monkey_names}_data.npy', EVRs, allow_pickle=True)
 
-#%% load full space decodability
-performance1X = np.load(f'{save_path}/' + 'performanceX1_full_data.npy', allow_pickle=True).item()
-performance2X = np.load(f'{save_path}/' + 'performanceX2_full_data.npy', allow_pickle=True).item()
-performance1X_shuff = np.load(f'{save_path}/' + 'performanceX1_full_shuff_data.npy', allow_pickle=True).item()
-performance2X_shuff = np.load(f'{save_path}/' + 'performanceX2_full_shuff_data.npy', allow_pickle=True).item()
-EVRs = np.load(f'{save_path}/' + 'EVRs_full.npy', allow_pickle=True).item()
 
-#%% plot cross temporal decoding
+#%% [Figure 2A] plot cross temporal decoding
 
 events = [0, 1300, 2600] # if monkey A [0, 1400, 2800] # events to label on the plot
 

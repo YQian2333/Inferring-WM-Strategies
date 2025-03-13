@@ -1,8 +1,7 @@
-# In[ ]:
+#%%
 %reload_ext autoreload
 %autoreload 2
 
-# Import useful py lib/packages
 import os
 from itertools import permutations, product
 
@@ -10,13 +9,9 @@ import warnings
 warnings.simplefilter(action='ignore', category=FutureWarning)
 
 import numpy as np
-import scipy
-from scipy import stats
 import pandas as pd
 
 import matplotlib.pyplot as plt
-import re, seaborn as sns
-
 import f_stats
 import f_plotting
 
@@ -36,10 +31,10 @@ epsilon = 1e-7
 
 #%% load precomputed euclidean distances
 
-euDists_monkeys = np.load(f'{data_path}/euDists_monkeys_centroids2_normalized_full.npy', allow_pickle=True).item()
-euDists_rnns = np.load(f'{data_path}/euDists_rnns_centroids2_normalized_full.npy', allow_pickle=True).item()
-euDists_monkeys_shuff = np.load(f'{data_path}/euDists_shuff_monkeys_centroids2_normalized_full.npy', allow_pickle=True).item()
-euDists_rnns_shuff = np.load(f'{data_path}/euDists_rnns_centroids2_shuff_normalized_full.npy', allow_pickle=True).item()
+euDists_monkeys = np.load(f'{data_path}/euDists_monkeys_centroids2_normalized.npy', allow_pickle=True).item()
+euDists_rnns = np.load(f'{data_path}/euDists_rnns_centroids2_normalized.npy', allow_pickle=True).item()
+euDists_monkeys_shuff = np.load(f'{data_path}/euDists_shuff_monkeys_centroids2_normalized.npy', allow_pickle=True).item()
+euDists_rnns_shuff = np.load(f'{data_path}/euDists_rnns_centroids2_shuff_normalized.npy', allow_pickle=True).item()
 
 #%%
 
@@ -190,7 +185,7 @@ plt.show()
 # drift ratio #
 ###############
 
-#%%
+#%% [Figure 4B] plot and quantify drift ratio 
 
 lineh = np.arange(0.3,0.7,0.001)
 linev = np.arange(0,0.1,0.001)

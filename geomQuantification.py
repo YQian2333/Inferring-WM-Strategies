@@ -26,7 +26,7 @@ import f_stats
 import f_decoding
 import f_plotting
 
-#%%
+#%% initialize paths and parameters
 data_path = 'D:/data' 
 tRangeRaw = np.arange(-500,4000,1) # -300 baseline, 0 onset, 300 pre1, 1300 delay1, 1600 pre2, 2600 delay2, response
 
@@ -46,7 +46,7 @@ tbins = np.arange(tslice[0], tslice[1], bins)
 checkpoints = [150, 550, 1050, 1450, 1850, 2350]#
 checkpointsLabels = ['S1','ED1','LD1','S2','ED2','LD2']
 
-#%%
+#%% initialize figure properties
 
 ################
 # figure props #
@@ -88,13 +88,12 @@ meanpointprops4 = dict(marker='^', markeredgecolor=color4, markerfacecolor='w',a
 medianprops = dict(linestyle='--', linewidth=1, color='w')
 
 
-#%%
+#%% load precomputed geometries from files
 
 ###############
 # Monkey Data #
 ###############
 
-# load precomputed geometries from files
 cosTheta11_data = np.load(f'{data_path}/' + 'cosTheta_11_data.npy', allow_pickle=True).item()
 cosTheta12_data = np.load(f'{data_path}/' + 'cosTheta_12_data.npy', allow_pickle=True).item()
 cosTheta22_data = np.load(f'{data_path}/' + 'cosTheta_22_data.npy', allow_pickle=True).item()
@@ -133,13 +132,11 @@ cosPsi11_bsl_data = np.load(f'{data_path}/' + 'cosPsi_11_bsl_data.npy', allow_pi
 cosPsi12_bsl_data = np.load(f'{data_path}/' + 'cosPsi_12_bsl_data.npy', allow_pickle=True).item()
 cosPsi22_bsl_data = np.load(f'{data_path}/' + 'cosPsi_22_bsl_data.npy', allow_pickle=True).item()
 
-#%%
 
 ########
 # rnns #
 ########
 
-# load precomputed geometries from files
 cosTheta11_rnn = np.load(f'{data_path}/' + 'cosTheta_11_rnn.npy', allow_pickle=True).item()
 cosTheta12_rnn = np.load(f'{data_path}/' + 'cosTheta_12_rnn.npy', allow_pickle=True).item()
 cosTheta22_rnn = np.load(f'{data_path}/' + 'cosTheta_22_rnn.npy', allow_pickle=True).item()
@@ -191,7 +188,7 @@ cosPsi22_bsl_rnn = np.load(f'{data_path}/' + 'cosPsi_22_bsl_rnn.npy', allow_pick
 
 
 
-#%%
+#%% [Figure 3A, 3B] plot subspace coplanarity and alignment at specific checkpoints
 
 # calculate mean and std for coplanarity and alignment
 cosTheta12Ret_rnn = {k:np.array([cosTheta12_rnn[k][n][1] for n in range(100)]).mean(1) for k in ('ed2','ed12')}
@@ -204,7 +201,6 @@ cosPsi12Ret_data = {k:cosPsi12_data[k][1].mean(1) for k in ('dlpfc','fef')}
 cosPsi12Ret_shuff_rnn = {k:np.array([cosPsi12_shuff_rnn[k][n][1] for n in range(100)]).mean(1) for k in ('ed2','ed12')}
 cosPsi12Ret_shuff_data = {k:cosPsi12_shuff_data[k][1] for k in ('dlpfc','fef')}
 
-#%%
 
 lineh = np.arange(0.5,1.5,0.001)
 linev = np.arange(0.71,0.72,0.0001)
@@ -398,13 +394,13 @@ plt.suptitle(f'I1D1 vs. I2D2, Retarget', fontsize = 25, y=1) # (Monkeys)
 plt.tight_layout()
 plt.show()
 
-#%%
+#%% plot code transferability at specific checkpoints
 
 ######################################
 # code transferability between items #
 ######################################
 
-#%% load precomputed code tranferability from file
+# load precomputed code tranferability from file
 performanceX_Trans_12_data = np.load(f'{data_path}/' + 'performance12X_Trans_data.npy', allow_pickle=True).item()
 performanceX_Trans_21_data = np.load(f'{data_path}/' + 'performance21X_Trans_data.npy', allow_pickle=True).item()
 performanceX_Trans_12_shuff_data = np.load(f'{data_path}/' + 'performance12X_Trans_shuff_data.npy', allow_pickle=True).item()
@@ -426,7 +422,7 @@ performance2_item_rnn = np.load(f'{data_path}/' + 'performance2_item_rnn.npy', a
 performance1_item_shuff_rnn = np.load(f'{data_path}/' + 'performance1_item_shuff_rnn.npy', allow_pickle=True).item()
 performance2_item_shuff_rnn = np.load(f'{data_path}/' + 'performance2_item_shuff_rnn.npy', allow_pickle=True).item()
 
-#%% get code transferability at specific checkpoints
+
 checkpoints = [150, 550, 1050, 1450, 1850, 2350]#
 checkpointsLabels = ['S1','ED1','LD1','S2','ED2','LD2'] 
 avgInterval = {150:150, 550:250, 1050:250, 1450:150, 1850:250, 2350:250} 
@@ -459,7 +455,6 @@ for k in ('ed2','ed12'):
 
 cp1, cp2 = 'LD1', 'LD2'
 cp1x, cp2x = checkpointsLabels.index(cp1), checkpointsLabels.index(cp2)
-#%%
 
 lineh = np.arange(0.3,0.7,0.001)
 linev = np.arange(1.16,1.165,0.0001)
@@ -521,13 +516,12 @@ print(f"R&U: M(SD) = {codeTrans_item_rnn['ed12'][1][:,cp1x, cp2x].mean():.3f}({c
 print(f"LPFC: M(SD) = {codeTrans_item_data['dlpfc'][1][:,cp1x, cp2x].mean():.3f}({codeTrans_item_data['dlpfc'][1][:,cp1x, cp2x].std():.3f}), p = {p3:.3f};")
 print(f"FEF: M(SD) = {codeTrans_item_data['fef'][1][:,cp1x, cp2x].mean():.3f}({codeTrans_item_data['fef'][1][:,cp1x, cp2x].std():.3f}), p = {p4:.3f};")
 
-#%%
+#%% [Figure 3C] plot code transferability ratio at specific checkpoints
 
 ############################################
 # code transferability ratio between items #
 ############################################
 
-#%% 
 checkpoints = [150, 550, 1050, 1450, 1850, 2350]#
 checkpointsLabels = ['S1','ED1','LD1','S2','ED2','LD2'] 
 avgInterval = {150:150, 550:250, 1050:250, 1450:150, 1850:250, 2350:250} 
@@ -600,7 +594,6 @@ for k in ('ed2','ed12'):
     codeTrans_ratio_rnn[k] = {tt:codeTrans_item_rnn[k][tt][:,cp1x, cp2x]/np.mean([codeWithin_item_rnn[k][1][tt][:,cp1x], codeWithin_item_rnn[k][2][tt][:,cp2x]], axis=0) for tt in (1,2)}
     codeTrans_ratio_shuff_rnn[k] = {tt:codeTrans_item_shuff_rnn[k][tt][:,cp1x, cp2x]/np.mean([codeWithin_item_shuff_rnn[k][1][tt][:,cp1x], codeWithin_item_shuff_rnn[k][2][tt][:,cp2x]], axis=0) for tt in (1,2)}
 
-#%%
 
 pltBsl = True
 
@@ -684,7 +677,7 @@ for k in codeTrans_ratio_ks.keys():
 
 
 
-#%% 
+#%% [Figure S3A, S3B] plot subspace coplanarity and alignment at specific checkpoints
 # I1D2-Distraction vs I2D2-Retarget
 cosThetaChoice_rnn = {k:np.array([cosTheta_choice_rnn[k][n] for n in range(100)]).mean(1) for k in ('ed2','ed12')}
 cosThetaChoice_data = {k:cosTheta_choice_data[k].mean(1) for k in ('dlpfc','fef')}
@@ -696,7 +689,7 @@ cosPsiChoice_data = {k:cosPsi_choice_data[k].mean(1) for k in ('dlpfc','fef')}
 cosPsiChoice_shuff_rnn = {k:np.array([cosPsi_choice_shuff_rnn[k][n] for n in range(100)]).mean(1) for k in ('ed2','ed12')}
 cosPsiChoice_shuff_data = {k:cosPsi_choice_shuff_data[k] for k in ('dlpfc','fef')}
 
-#%% 
+
 angleCheckPoints = np.linspace(0,np.pi,7).round(5)
 cmap = plt.get_cmap('coolwarm')
 norm = mcolors.BoundaryNorm(np.flip(np.cos(angleCheckPoints).round(5)),cmap.N, clip=True)
@@ -882,22 +875,14 @@ plt.suptitle(f'I2D2-Retarget vs. I1D2-Distraction', fontsize = 25, y=1) # (Monke
 plt.tight_layout()
 plt.show()
 
-#%%
 
-
-
-
-#%%
- 
-#%%
-
-#%%
+#%% plot code transferability at specific checkpoints
 
 ######################################################
 # code transferability between target-item subspaces #
 ######################################################
 
-#%% 
+
 # load precomputed code transferability from files
 performanceX_Trans_rdc_data = np.load(f'{data_path}/' + 'performanceX_Trans_rdc_data.npy', allow_pickle=True).item()
 performanceX_Trans_drc_data = np.load(f'{data_path}/' + 'performanceX_Trans_drc_data.npy', allow_pickle=True).item()
@@ -930,7 +915,6 @@ performance2_item_rnn = np.load(f'{data_path}/' + 'performance2_item_rnn.npy', a
 performance1_item_shuff_rnn = np.load(f'{data_path}/' + 'performance1_item_shuff_rnn.npy', allow_pickle=True).item()
 performance2_item_shuff_rnn = np.load(f'{data_path}/' + 'performance2_item_shuff_rnn.npy', allow_pickle=True).item()
 
-#%%
 checkpoints = [150, 550, 1150, 1450, 1850, 2350]#
 checkpointsLabels = ['S1','ED1','LD1','S2','ED2','LD2'] 
 avgInterval = {150:150, 550:250, 1150:250, 1450:150, 1850:250, 2350:250} 
@@ -960,7 +944,6 @@ for k in ('ed2','ed12'):
     codeTrans_choice_rnn[k] = np.array([f_decoding.code_transferability(pfmX_rdc_rnn[n],pfmX_drc_rnn[n],checkpoints) for n in range(100)])
     codeTrans_choice_shuff_rnn[k] = np.array([f_decoding.code_transferability(pfmX_rdc_shuff_rnn[n],pfmX_drc_shuff_rnn[n],checkpoints) for n in range(100)])
 
-#%%
 cp1, cp2 = 'LD2', 'LD2'
 cp1x, cp2x = checkpointsLabels.index(cp1), checkpointsLabels.index(cp2)
 
@@ -1017,13 +1000,12 @@ print(f"R@R: M(SD) = {codeTrans_choice_rnn['ed2'].mean():.3f}({codeTrans_choice_
 print(f"R&U: M(SD) = {codeTrans_choice_rnn['ed12'].mean():.3f}({codeTrans_choice_rnn['ed12'].std():.3f}), p = {p2:.3f};")
 print(f"LPFC: M(SD) = {codeTrans_choice_data['dlpfc'].mean():.3f}({codeTrans_choice_data['dlpfc'].std():.3f}), p = {p3:.3f};")
 print(f"FEF: M(SD) = {codeTrans_choice_data['fef'].mean():.3f}({codeTrans_choice_data['fef'].std():.3f}), p = {p4:.3f};")
-#%%
+#%% [Figure S3C] plot code transferability ratio at specific checkpoints
 
 ############################################################
 # code transferability ratio between target-item subspaces #
 ############################################################
 
-#%%
 checkpoints = [150, 550, 1050, 1450, 1850, 2350]#
 checkpointsLabels = ['S1','ED1','LD1','S2','ED2','LD2'] #, 2800
 avgInterval = {150:150, 550:250, 1050:250, 1450:150, 1850:250, 2350:250} #, 2800:200
@@ -1087,7 +1069,6 @@ for k in ('ed2','ed12'):
     codeTrans_ratio_rnn[k] = codeTrans_choice_rnn[k][:,cp1x, cp2x]/np.mean([codeWithin_choice_rnn[k][1][:,cp2x], codeWithin_choice_rnn[k][2][:,cp2x]], axis=0)
     codeTrans_ratio_shuff_rnn[k] = codeTrans_choice_shuff_rnn[k][:,cp1x, cp2x]/np.mean([codeWithin_choice_shuff_rnn[k][1][:,cp2x], codeWithin_choice_shuff_rnn[k][2][:,cp2x]], axis=0)
 
-#%%
 
 pltBsl = True
 

@@ -19,8 +19,8 @@ import f_pseudoPop
 ############################################
 
 #%% set load and save paths
-data_path = 'E:/NUS/PhD/data' # change to your own data path
-save_path = 'E:/NUS/PhD/data/pseudo_ww' # change to your own save path
+data_path = 'D:/data' # change to your own data path
+pseudoPop_path = 'D:/data/pseudoPop' # change to your own save path
 dt = 10 # sampling rate
 
 #%% Monkey A Info
@@ -178,6 +178,6 @@ for n in range(nIters):
     
     # wrap up pseudo population
     pseudo_data = {'pseudo_TrialInfo':pseudo_TrialInfo, 'pseudo_region':pseudo_region}
-    np.save(save_path + f'/pseudo_{monkey_names}{n}.npy', pseudo_data, allow_pickle=True) # save pseudo population data
+    np.save(pseudoPop_path + f'/pseudo_{monkey_names}{n}.npy', pseudo_data, allow_pickle=True) # save pseudo population data
     
     print(f'{time.time()-t_IterOn:.3f}s') # show time cost for each iteration
