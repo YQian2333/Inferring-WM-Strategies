@@ -23,11 +23,6 @@ from scipy.io import loadmat  # this is the SciPy module that loads mat-files
 import h5py
 
 import pandas as pd
-import statsmodels.api as sm
-from statsmodels.formula.api import ols
-from statsmodels.sandbox.stats.multicomp import multipletests
-
-import pingouin as pg
 
 import DataProcessingTools as DPT # https://github.com/grero/DataProcessingTools
 import NeuralProcessingTools as NPT # https://github.com/grero/NeuralProcessingTools
