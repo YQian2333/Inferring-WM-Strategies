@@ -6,7 +6,7 @@
 ## Dataset
 To create pseudo-populations used for biological data analyses, download dataset files from:
 [Inferring Working Memory Strategy](https://figshare.com/projects/Inferring_Working_Memory_Strategy/239771) and refer to:
-- [`bioData create pseudoPop.py`](main/bioData_create_pseudoPop.py)
+- [`bioData create pseudoPop.py`](/bioData_create_pseudoPop.py)
 
 See also the following essential modules used to preprocess our biological data:
 - [NeuralProcessingTools](https://github.com/grero/NeuralProcessingTools)
